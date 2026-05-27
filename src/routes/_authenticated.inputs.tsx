@@ -1,0 +1,236 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Upload, Loader2 } from "lucide-react";
+
+export const Route = createFileRoute("/_authenticated/inputs")({
+  component: InputsPage,
+});
+
+type Line = { code: string; label: string | null; department: string | null; p1_desc: string | null; p2_desc: string | null; p3_desc: string | null; kind: string };
+type Customer = { id: string; customer_name: string; bu: string };
+
+const DEPT_COLORS: Record<string, string> = {
+  "Comercial": "#4A1942",
+  "PS": "#2E5D4F",
+  "Produto": "#0F2940",
+  "Fiscal": "#C9A227",
+  "Financeiro": "#7d3c98",
+  "Tech/Infra": "#2980b9",
+  "CS": "#16a085",
+  "Suporte": "#8e44ad",
+  "PS/Onboarding": "#27ae60",
+  "Marketing": "#d35400",
+  "Engenharia": "#34495e",
+  "G&A": "#94908A",
+};
+
+function InputsPage() {
+  const [dept, setDept] = useState<string>("");
+  const [lines, setLines] = useState<Line[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [inputs, setInputs] = useState<Array<{ line_code: string; customer_id: string; value: number | null; priority: string; department: string }>>([]);
+  const [bu, setBu] = useState<"B2B"|"B2C">("B2B");
+  const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      const { data: p } = await supabase.from("profiles").select("department").eq("id", u.user.id).maybeSingle();
+      setDept(p?.department || "");
+      const { data: ls } = await supabase.from("waterfall_lines").select("*").eq("kind","main").order("sort_order");
+      setLines((ls as Line[]) || []);
+      const { data: cs } = await supabase.from("customers").select("id,customer_name,bu").order("customer_name");
+      setCustomers((cs as Customer[]) || []);
+      const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department");
+      setInputs(ins || []);
+    })();
+  }, []);
+
+  const myLines = useMemo(() => lines.filter(l => l.department === dept), [lines, dept]);
+  const buCustomers = useMemo(() => customers.filter(c => c.bu === bu), [customers, bu]);
+
+  // Progress bars
+  const myTotal = myLines.length * buCustomers.length;
+  const myFilled = useMemo(() => inputs.filter(i => i.department === dept && myLines.some(l => l.code === i.line_code) && buCustomers.some(c => c.id === i.customer_id) && i.value !== null).length, [inputs, dept, myLines, buCustomers]);
+
+  // Global stacked: per dept count
+  const allByDept = useMemo(() => {
+    const m = new Map<string, { total: number; filled: number }>();
+    for (const l of lines) {
+      if (!l.department) continue;
+      const cur = m.get(l.department) || { total: 0, filled: 0 };
+      cur.total += buCustomers.length;
+      m.set(l.department, cur);
+    }
+    for (const i of inputs) {
+      if (i.value === null) continue;
+      const cur = m.get(i.department);
+      if (!cur) continue;
+      if (!buCustomers.some(c => c.id === i.customer_id)) continue;
+      cur.filled += 1;
+    }
+    return Array.from(m.entries()).map(([d, v]) => ({ dept: d, ...v, color: DEPT_COLORS[d] || "#888" }));
+  }, [lines, inputs, buCustomers]);
+
+  const globalTotal = allByDept.reduce((s,d) => s + d.total, 0);
+
+  const saveValue = async (line_code: string, customer_id: string, value: number | null, priority: string) => {
+    setBusy(`${line_code}:${customer_id}`);
+    const { error } = await supabase.from("line_inputs").upsert({
+      line_code, customer_id, bu, department: dept, value, priority,
+    }, { onConflict: "line_code,customer_id,bu" });
+    if (!error) {
+      const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department");
+      setInputs(ins || []);
+    }
+    setBusy(null);
+  };
+
+  const uploadAndExtract = async (file: File, line: Line) => {
+    setBusy(`upload:${line.code}`);
+    const path = `${Date.now()}-${file.name}`;
+    const { error: upErr } = await supabase.storage.from("inputs").upload(path, file);
+    if (upErr) { alert(upErr.message); setBusy(null); return; }
+    // Read file text for AI
+    const text = await file.text().catch(() => "");
+    const customerList = buCustomers.map(c => ({ id: c.id, name: c.customer_name }));
+    const { data, error } = await supabase.functions.invoke("extract-inputs", {
+      body: { fileName: file.name, content: text.slice(0, 8000), lineLabel: line.label, lineCode: line.code, customers: customerList },
+    });
+    if (error) { alert(`AI: ${error.message}`); setBusy(null); return; }
+    const extracted: Array<{ customer_id: string; value: number }> = data?.matches || [];
+    for (const m of extracted) {
+      await supabase.from("line_inputs").upsert({
+        line_code: line.code, customer_id: m.customer_id, bu, department: dept,
+        value: m.value, priority: "P1", file_path: path, ai_extraction: m,
+      }, { onConflict: "line_code,customer_id,bu" });
+    }
+    const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department");
+    setInputs(ins || []);
+    setBusy(null);
+  };
+
+  if (!dept) {
+    return <div className="p-10"><p className="text-muted-foreground">Defina seu departamento no cadastro para começar.</p></div>;
+  }
+
+  return (
+    <div className="p-10 space-y-8">
+      <div>
+        <p className="eyebrow">INPUTS</p>
+        <h1 className="font-display text-4xl text-primary mt-2">Departamento: {dept}</h1>
+        <p className="text-sm text-muted-foreground mt-2">Você vê e edita apenas as linhas do seu departamento. Outros departamentos veem totais agregados.</p>
+      </div>
+
+      <div className="inline-flex border border-border">
+        {(["B2B","B2C"] as const).map(b => (
+          <button key={b} onClick={() => setBu(b)}
+            className={`px-6 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${bu===b ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>{b}</button>
+        ))}
+      </div>
+
+      {/* Progress: dept */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="eyebrow">PROGRESSO · {dept}</p>
+          <span className="text-sm font-mono">{myFilled} / {myTotal}</span>
+        </div>
+        <div className="h-3 bg-secondary border border-border">
+          <div className="h-full bg-primary" style={{ width: myTotal ? `${(myFilled/myTotal)*100}%` : "0%" }} />
+        </div>
+      </div>
+
+      {/* Progress: global stacked by dept */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="eyebrow">PROGRESSO GLOBAL · POR DEPTO</p>
+          <span className="text-sm font-mono">{allByDept.reduce((s,d)=>s+d.filled,0)} / {globalTotal}</span>
+        </div>
+        <div className="flex h-6 border border-border overflow-hidden">
+          {allByDept.map((d) => (
+            <div key={d.dept} title={`${d.dept}: ${d.filled}/${d.total}`}
+              style={{ width: globalTotal ? `${(d.total/globalTotal)*100}%` : "0%", background: `${d.color}33` }}
+              className="relative">
+              <div style={{ width: d.total ? `${(d.filled/d.total)*100}%`: "0%", background: d.color }}
+                className="h-full" />
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-3 text-xs">
+          {allByDept.map(d => (
+            <span key={d.dept} className="inline-flex items-center gap-2">
+              <span className="w-3 h-3" style={{ background: d.color }} /> {d.dept} · {d.filled}/{d.total}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Lines × Customers */}
+      {myLines.length === 0 && (
+        <p className="text-sm text-muted-foreground">Nenhuma linha do waterfall está atribuída ao seu departamento ainda.</p>
+      )}
+      {buCustomers.length === 0 && (
+        <p className="text-sm text-muted-foreground">Cadastre clientes em /clientes para começar a preencher.</p>
+      )}
+      <div className="space-y-6">
+        {myLines.map((l) => (
+          <div key={l.code} className="bg-card border border-border">
+            <div className="px-6 py-4 border-b border-border flex items-start justify-between gap-6">
+              <div>
+                <p className="text-xs font-mono text-muted-foreground">#{l.code}</p>
+                <h3 className="font-display text-lg text-primary mt-1">{l.label}</h3>
+                <div className="grid grid-cols-3 gap-4 text-xs text-muted-foreground mt-3 max-w-3xl">
+                  <span><b className="text-foreground">P1:</b> {l.p1_desc}</span>
+                  <span><b className="text-foreground">P2:</b> {l.p2_desc}</span>
+                  <span><b className="text-foreground">P3:</b> {l.p3_desc}</span>
+                </div>
+              </div>
+              <label className="cursor-pointer inline-flex items-center gap-2 bg-secondary px-4 py-2 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-primary hover:text-primary-foreground">
+                {busy === `upload:${l.code}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                Upload + IA
+                <input type="file" hidden accept=".csv,.txt,.xlsx,.pdf" onChange={(e) => {
+                  const f = e.target.files?.[0]; if (f) uploadAndExtract(f, l);
+                }} />
+              </label>
+            </div>
+            <table className="w-full text-sm">
+              <thead className="bg-secondary/40 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                <tr>
+                  <th className="text-left px-6 py-2">Cliente</th>
+                  <th className="text-left px-6 py-2 w-32">Prioridade</th>
+                  <th className="text-right px-6 py-2 w-48">Valor (R$)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {buCustomers.map((c) => {
+                  const row = inputs.find(i => i.line_code === l.code && i.customer_id === c.id);
+                  return (
+                    <tr key={c.id} className="border-t border-border">
+                      <td className="px-6 py-2">{c.customer_name}</td>
+                      <td className="px-6 py-2">
+                        <select defaultValue={row?.priority || "P1"} className="bg-transparent border border-border px-2 py-1 text-xs"
+                          onChange={(e) => saveValue(l.code, c.id, row?.value ?? null, e.target.value)}>
+                          <option>P1</option><option>P2</option><option>P3</option><option>MANUAL</option><option>RATEIO</option>
+                        </select>
+                      </td>
+                      <td className="px-6 py-2 text-right">
+                        <input type="number" defaultValue={row?.value ?? ""} placeholder="0"
+                          className="w-full bg-transparent border-b border-border focus:border-primary focus:outline-none py-1 text-right font-mono"
+                          onBlur={(e) => {
+                            const v = e.target.value === "" ? null : Number(e.target.value);
+                            saveValue(l.code, c.id, v, row?.priority || "P1");
+                          }} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

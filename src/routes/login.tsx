@@ -1,0 +1,72 @@
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
+import { useState, type FormEvent } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+export const Route = createFileRoute("/login")({
+  validateSearch: (s: Record<string, unknown>) => ({ redirect: (s.redirect as string) || "/waterfall" }),
+  component: LoginPage,
+});
+
+function LoginPage() {
+  const navigate = useNavigate();
+  const { redirect: redirectTo } = Route.useSearch();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErr(null);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) { setErr(error.message); return; }
+    navigate({ to: redirectTo });
+  };
+
+  return (
+    <div className="min-h-screen flex">
+      <div className="hidden md:flex w-1/2 bg-primary text-primary-foreground p-16 flex-col justify-between">
+        <Link to="/" className="font-display text-2xl">Cascata</Link>
+        <div>
+          <p className="eyebrow !text-[var(--gold)] mb-6">PRICING · WATERFALL</p>
+          <h2 className="font-display text-5xl italic leading-tight">
+            Entre para abrir<br/>o seu P&L<br/>por cliente.
+          </h2>
+        </div>
+        <p className="text-xs uppercase tracking-[0.18em] opacity-60">por J P Saraiva</p>
+      </div>
+      <div className="flex-1 flex items-center justify-center p-12">
+        <form onSubmit={onSubmit} className="w-full max-w-sm">
+          <p className="eyebrow mb-6">ENTRAR</p>
+          <h1 className="font-display text-4xl text-primary mb-10">Bem-vindo de volta.</h1>
+          <div className="space-y-5">
+            <Field label="Email" type="email" value={email} onChange={setEmail} required />
+            <Field label="Senha" type="password" value={password} onChange={setPassword} required />
+          </div>
+          {err && <p className="text-xs text-destructive mt-4">{err}</p>}
+          <button type="submit" disabled={loading} className="mt-8 w-full bg-primary text-primary-foreground py-4 text-sm font-semibold uppercase tracking-[0.18em] disabled:opacity-60">
+            {loading ? "Entrando…" : "Entrar"}
+          </button>
+          <p className="mt-6 text-sm text-muted-foreground">
+            Sem conta? <Link to="/signup" className="text-primary underline underline-offset-4">Criar conta</Link>
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, type, value, onChange, required }: { label: string; type: string; value: string; onChange: (v: string) => void; required?: boolean }) {
+  return (
+    <label className="block">
+      <span className="eyebrow block mb-2">{label}</span>
+      <input
+        type={type} value={value} required={required}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-transparent border-0 border-b border-foreground/40 focus:border-primary focus:outline-none py-2 text-foreground"
+      />
+    </label>
+  );
+}
