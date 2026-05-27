@@ -37,6 +37,15 @@ function SignupPage() {
     navigate({ to: "/waterfall" });
   };
 
+  const onGoogle = async () => {
+    setErr(null);
+    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+    if (result.error) { setErr(result.error.message); return; }
+    if (result.redirected) return;
+    navigate({ to: "/waterfall" });
+  };
+
+
   return (
     <div className="min-h-screen flex">
       <div className="hidden md:flex w-1/2 bg-primary text-primary-foreground p-16 flex-col justify-between">
