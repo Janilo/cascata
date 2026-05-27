@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Trash2, Upload, Loader2 } from "lucide-react";
+import { fileToText } from "@/lib/file-parse";
 
 export const Route = createFileRoute("/_authenticated/clientes")({
   component: ClientsPage,
@@ -33,7 +34,7 @@ function ClientsPage() {
 
   const upload = async (file: File) => {
     setBusy(true);
-    const text = await file.text().catch(() => "");
+    const text = await fileToText(file);
     const { data, error } = await supabase.functions.invoke("extract-customers", {
       body: { fileName: file.name, content: text.slice(0, 8000) },
     });
