@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, Loader2 } from "lucide-react";
+import { fileToText } from "@/lib/file-parse";
 
 export const Route = createFileRoute("/_authenticated/inputs")({
   component: InputsPage,
@@ -93,8 +94,8 @@ function InputsPage() {
     const path = `${Date.now()}-${file.name}`;
     const { error: upErr } = await supabase.storage.from("inputs").upload(path, file);
     if (upErr) { alert(upErr.message); setBusy(null); return; }
-    // Read file text for AI
-    const text = await file.text().catch(() => "");
+    // Parse XLSX/CSV/TXT to plain text (then send to AI)
+    const text = await fileToText(file);
     const customerList = buCustomers.map(c => ({ id: c.id, name: c.customer_name }));
     const { data, error } = await supabase.functions.invoke("extract-inputs", {
       body: { fileName: file.name, content: text.slice(0, 8000), lineLabel: line.label, lineCode: line.code, customers: customerList },
