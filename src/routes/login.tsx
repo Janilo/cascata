@@ -59,6 +59,10 @@ function LoginPage() {
           <button type="submit" disabled={loading} className="mt-8 w-full bg-primary text-primary-foreground py-4 text-sm font-semibold uppercase tracking-[0.18em] disabled:opacity-60">
             {loading ? "Entrando…" : "Entrar"}
           </button>
+          <button type="button" onClick={onGoogle} className="mt-3 w-full border border-foreground/20 py-4 text-sm font-semibold uppercase tracking-[0.18em] hover:bg-foreground/5">
+            Entrar com Google
+          </button>
+
           <p className="mt-6 text-sm text-muted-foreground">
             Sem conta? <Link to="/signup" className="text-primary underline underline-offset-4">Criar conta</Link>
           </p>
