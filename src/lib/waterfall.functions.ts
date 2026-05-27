@@ -5,6 +5,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const Input = z.object({ bu: z.enum(["B2B", "B2C"]) });
 const PRIORITY_ORDER = ["P1", "P2", "P3", "MANUAL", "RATEIO"] as const;
@@ -18,6 +19,7 @@ type OrgNode = {
 const ORG_LEVELS = ["customer", "account", "channel", "leader", "department", "bu"] as const;
 
 export const getWaterfall = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) => Input.parse(d))
   .handler(async ({ data }) => {
     const { bu } = data;
