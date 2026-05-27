@@ -12,7 +12,6 @@ type Node = {
   id: string; parent_id: string | null;
   bu: string | null; department: string | null; leader: string | null;
   channel: string | null; account: string | null; customer: string | null;
-  salary: number | null;
 };
 
 const LEVELS = ["bu", "department", "leader", "channel", "account", "customer"] as const;
@@ -22,14 +21,15 @@ type TreeNode = {
   level: Level;
   value: string;
   children: TreeNode[];
-  salary: number; // sum of salaries below
+  salary: number;
   count: number;
 };
 
-function buildTree(nodes: Node[]): TreeNode[] {
+function buildTree(nodes: Node[], salaries: Record<string, number>): TreeNode[] {
   const root: TreeNode = { level: "bu", value: "_root", children: [], salary: 0, count: 0 };
   for (const n of nodes) {
     let cursor = root;
+    const nodeSalary = salaries[n.id] || 0;
     for (const lvl of LEVELS) {
       const val = (n[lvl] || "—") as string;
       let child = cursor.children.find((c) => c.value === val && c.level === lvl);
@@ -37,7 +37,7 @@ function buildTree(nodes: Node[]): TreeNode[] {
         child = { level: lvl, value: val, children: [], salary: 0, count: 0 };
         cursor.children.push(child);
       }
-      child.salary += Number(n.salary || 0);
+      child.salary += nodeSalary;
       child.count += 1;
       cursor = child;
     }
@@ -47,35 +47,60 @@ function buildTree(nodes: Node[]): TreeNode[] {
 
 function OrgPage() {
   const [nodes, setNodes] = useState<Node[]>([]);
-  const [form, setForm] = useState<Partial<Node>>({ bu: "B2B" });
+  const [salaries, setSalaries] = useState<Record<string, number>>({});
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [form, setForm] = useState<Partial<Node> & { salary?: number }>({ bu: "B2B" });
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<"tree" | "table">("tree");
 
   const reload = async () => {
     const { data } = await supabase.from("org_nodes").select("*").order("created_at");
-    setNodes((data as Node[]) || []);
+    setNodes((data as unknown as Node[]) || []);
+    // Salaries are admin-only — RLS silently returns [] for non-admins
+    const { data: sal } = await supabase.from("org_node_salaries").select("org_node_id,salary");
+    const map: Record<string, number> = {};
+    for (const r of sal || []) map[r.org_node_id] = Number(r.salary || 0);
+    setSalaries(map);
   };
-  useEffect(() => { reload(); }, []);
+  useEffect(() => {
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (u.user) {
+        const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
+        setIsAdmin((roles || []).some(r => r.role === "admin"));
+      }
+      reload();
+    })();
+  }, []);
 
   const add = async () => {
-    await supabase.from("org_nodes").insert({ ...form, salary: form.salary || 0 });
+    const { salary, ...rest } = form;
+    const { data: inserted, error } = await supabase.from("org_nodes").insert(rest).select("id").single();
+    if (error) { alert(error.message); return; }
+    if (isAdmin && inserted && salary) {
+      await supabase.from("org_node_salaries").insert({ org_node_id: inserted.id, salary });
+    }
     setForm({ bu: "B2B" });
     reload();
   };
-  const del = async (id: string) => { await supabase.from("org_nodes").delete().eq("id", id); reload(); };
+  const del = async (id: string) => {
+    await supabase.from("org_node_salaries").delete().eq("org_node_id", id);
+    await supabase.from("org_nodes").delete().eq("id", id);
+    reload();
+  };
 
   const importFile = async (file: File) => {
     setBusy(true);
     try {
       const text = await fileToText(file);
-      // Heuristic CSV import: expects header row with BU,Departamento,Líder,Canal,Conta,Cliente,Salário
       const rows = text.split(/\r?\n/).filter((r) => r.trim()).map((r) => r.split(","));
       if (rows.length < 2) { alert("Não consegui ler o arquivo. Esperado: BU,Departamento,Líder,Canal,Conta,Cliente,Salário"); setBusy(false); return; }
       const header = rows[0].map((h) => h.trim().toLowerCase());
       const idx = (k: string) => header.findIndex((h) => h.includes(k));
       const iBu = idx("bu"), iDept = idx("depart"), iLead = idx("líder") >= 0 ? idx("líder") : idx("lider"),
         iCh = idx("canal"), iAcc = idx("conta"), iCust = idx("cliente"), iSal = idx("salár") >= 0 ? idx("salár") : idx("salar");
-      const inserts: Partial<Node>[] = [];
+      type RowInsert = Partial<Node> & { __salary?: number };
+      const inserts: RowInsert[] = [];
       for (let r = 1; r < rows.length; r++) {
         const row = rows[r];
         if (!row.some((c) => c?.trim())) continue;
@@ -86,26 +111,36 @@ function OrgPage() {
           channel: iCh >= 0 ? row[iCh]?.trim() : null,
           account: iAcc >= 0 ? row[iAcc]?.trim() : null,
           customer: iCust >= 0 ? row[iCust]?.trim() : null,
-          salary: iSal >= 0 ? Number((row[iSal] || "0").replace(/[^\d.-]/g, "")) || 0 : 0,
+          __salary: iSal >= 0 ? Number((row[iSal] || "0").replace(/[^\d.-]/g, "")) || 0 : 0,
         });
       }
       if (inserts.length === 0) { alert("Nenhuma linha encontrada."); setBusy(false); return; }
-      const { error } = await supabase.from("org_nodes").insert(inserts);
-      if (error) alert(error.message);
+      const nodeRows = inserts.map(({ __salary, ...rest }) => rest);
+      const { data: insertedRows, error } = await supabase.from("org_nodes").insert(nodeRows).select("id");
+      if (error) { alert(error.message); }
+      if (isAdmin && insertedRows) {
+        const salaryRows = insertedRows
+          .map((r, i) => ({ org_node_id: r.id, salary: inserts[i].__salary || 0 }))
+          .filter(r => r.salary > 0);
+        if (salaryRows.length) await supabase.from("org_node_salaries").insert(salaryRows);
+      }
       await reload();
     } finally {
       setBusy(false);
     }
   };
 
-  const tree = useMemo(() => buildTree(nodes), [nodes]);
+  const tree = useMemo(() => buildTree(nodes, salaries), [nodes, salaries]);
 
   return (
     <div className="p-10 space-y-8">
       <div>
         <p className="eyebrow">ORGANOGRAMA</p>
         <h1 className="font-display text-4xl text-primary mt-2">BU · Departamento · Líder · Canal · Conta · Cliente</h1>
-        <p className="text-sm text-muted-foreground mt-2">Quando faltar valor em algum nível, o rateio do último nível completo é aplicado. Salários entram como gasto no waterfall.</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Quando faltar valor em algum nível, o rateio do último nível completo é aplicado. Salários entram como gasto no waterfall.
+          {!isAdmin && <span className="block mt-1 text-xs italic">Você não tem permissão para ver ou editar salários.</span>}
+        </p>
       </div>
 
       <div className="flex items-center gap-3">
@@ -134,8 +169,10 @@ function OrgPage() {
             <input key={k} placeholder={k} value={(form as Record<string, unknown>)[k] as string || ""} onChange={(e) => setForm({ ...form, [k]: e.target.value })}
               className="border border-border bg-transparent px-3 py-2 text-sm" />
           ))}
-          <input type="number" placeholder="Salário" value={form.salary || ""} onChange={(e) => setForm({ ...form, salary: Number(e.target.value) })}
-            className="border border-border bg-transparent px-3 py-2 text-sm" />
+          {isAdmin && (
+            <input type="number" placeholder="Salário" value={form.salary || ""} onChange={(e) => setForm({ ...form, salary: Number(e.target.value) })}
+              className="border border-border bg-transparent px-3 py-2 text-sm" />
+          )}
         </div>
         <button onClick={add} className="mt-4 inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2 text-xs uppercase tracking-[0.18em] font-semibold">
           <Plus className="w-4 h-4" /> Adicionar
@@ -147,7 +184,7 @@ function OrgPage() {
           {tree.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">Nenhum nó ainda. Importe uma planilha ou cadastre manualmente.</p>
           ) : (
-            <ul className="space-y-1">{tree.map((n, i) => <TreeRow key={i} node={n} depth={0} />)}</ul>
+            <ul className="space-y-1">{tree.map((n, i) => <TreeRow key={i} node={n} depth={0} showSalary={isAdmin} />)}</ul>
           )}
         </div>
       ) : (
@@ -161,7 +198,7 @@ function OrgPage() {
                 <th className="text-left px-6 py-3">Canal</th>
                 <th className="text-left px-6 py-3">Conta</th>
                 <th className="text-left px-6 py-3">Cliente</th>
-                <th className="text-right px-6 py-3">Salário</th>
+                {isAdmin && <th className="text-right px-6 py-3">Salário</th>}
                 <th className="px-6 py-3"></th>
               </tr>
             </thead>
@@ -174,13 +211,13 @@ function OrgPage() {
                   <td className="px-6 py-3">{n.channel}</td>
                   <td className="px-6 py-3">{n.account}</td>
                   <td className="px-6 py-3">{n.customer}</td>
-                  <td className="px-6 py-3 text-right font-mono text-xs">{fmt(Number(n.salary || 0))}</td>
+                  {isAdmin && <td className="px-6 py-3 text-right font-mono text-xs">{fmt(salaries[n.id] || 0)}</td>}
                   <td className="px-6 py-3 text-right">
                     <button onClick={() => del(n.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
                   </td>
                 </tr>
               ))}
-              {nodes.length === 0 && <tr><td colSpan={8} className="px-6 py-12 text-center text-muted-foreground text-sm">Nenhum nó ainda.</td></tr>}
+              {nodes.length === 0 && <tr><td colSpan={isAdmin ? 8 : 7} className="px-6 py-12 text-center text-muted-foreground text-sm">Nenhum nó ainda.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -189,7 +226,7 @@ function OrgPage() {
   );
 }
 
-function TreeRow({ node, depth }: { node: TreeNode; depth: number }) {
+function TreeRow({ node, depth, showSalary }: { node: TreeNode; depth: number; showSalary: boolean }) {
   const [open, setOpen] = useState(depth < 2);
   const hasKids = node.children.length > 0;
   return (
@@ -201,11 +238,11 @@ function TreeRow({ node, depth }: { node: TreeNode; depth: number }) {
         <span className="text-xs uppercase tracking-wider text-muted-foreground w-24">{node.level}</span>
         <span className="text-sm font-medium text-foreground flex-1">{node.value}</span>
         <span className="text-xs text-muted-foreground">{node.count} {node.count === 1 ? "pessoa" : "pessoas"}</span>
-        <span className="text-xs font-mono text-primary w-32 text-right">{fmt(node.salary)}</span>
+        {showSalary && <span className="text-xs font-mono text-primary w-32 text-right">{fmt(node.salary)}</span>}
       </button>
       {hasKids && open && (
         <ul className="space-y-0.5">
-          {node.children.map((c, i) => <TreeRow key={i} node={c} depth={depth + 1} />)}
+          {node.children.map((c, i) => <TreeRow key={i} node={c} depth={depth + 1} showSalary={showSalary} />)}
         </ul>
       )}
     </li>
