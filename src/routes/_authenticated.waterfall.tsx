@@ -6,8 +6,11 @@ import {
   Bar, BarChart, CartesianGrid, Cell, ComposedChart, LabelList, Line,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { ChevronDown, ChevronUp, Upload } from "lucide-react";
+import { ChevronDown, ChevronUp, Upload, FileSpreadsheet, FileText } from "lucide-react";
 import { getWaterfall } from "@/lib/waterfall.functions";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export const Route = createFileRoute("/_authenticated/waterfall")({
   component: WaterfallPage,
@@ -19,53 +22,63 @@ type Line = {
   main_no: number | null; sub_no: number | null; sort_order: number;
 };
 
+type Mode = "B2B" | "B2C" | "COMPARE";
+
 function WaterfallPage() {
-  const [bu, setBu] = useState<"B2B" | "B2C">("B2B");
+  const [mode, setMode] = useState<Mode>("B2B");
   const [lines, setLines] = useState<Line[]>([]);
-  const [totalsByCode, setTotalsByCode] = useState<Map<string, number>>(new Map());
+  const [totalsB2B, setTotalsB2B] = useState<Map<string, number>>(new Map());
+  const [totalsB2C, setTotalsB2C] = useState<Map<string, number>>(new Map());
   const [showSub, setShowSub] = useState(false);
-  const [subTotals, setSubTotals] = useState<Map<string, number>>(new Map());
+  const [subTotalsB2B, setSubTotalsB2B] = useState<Map<string, number>>(new Map());
+  const [subTotalsB2C, setSubTotalsB2C] = useState<Map<string, number>>(new Map());
   const callWaterfall = useServerFn(getWaterfall);
 
   useEffect(() => {
     (async () => {
       const { data: ls } = await supabase.from("waterfall_lines").select("*").order("sort_order");
       setLines((ls as Line[]) || []);
-      // sublinhas (7.x) lidos direto - server fn cobre só os main para o gráfico
-      const { data: subs } = await supabase
-        .from("line_inputs").select("line_code,value").eq("bu", bu);
-      const m = new Map<string, number>();
-      for (const r of subs || []) {
-        if (r.line_code.startsWith("7.")) m.set(r.line_code, (m.get(r.line_code) || 0) + Number(r.value || 0));
-      }
-      setSubTotals(m);
-      const wf = await callWaterfall({ data: { bu } });
-      setTotalsByCode(new Map(Object.entries(wf.totalsByCode)));
     })();
-  }, [bu, callWaterfall]);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const need: ("B2B" | "B2C")[] = mode === "COMPARE" ? ["B2B", "B2C"] : [mode];
+      for (const bu of need) {
+        const wf = await callWaterfall({ data: { bu } });
+        const totals = new Map(Object.entries(wf.totalsByCode));
+        if (bu === "B2B") setTotalsB2B(totals); else setTotalsB2C(totals);
+        const { data: subs } = await supabase.from("line_inputs").select("line_code,value").eq("bu", bu);
+        const m = new Map<string, number>();
+        for (const r of subs || []) {
+          if (r.line_code.startsWith("7.")) m.set(r.line_code, (m.get(r.line_code) || 0) + Number(r.value || 0));
+        }
+        if (bu === "B2B") setSubTotalsB2B(m); else setSubTotalsB2C(m);
+      }
+    })();
+  }, [mode, callWaterfall]);
+
+  const activeTotals = mode === "B2C" ? totalsB2C : totalsB2B;
+  const activeSub = mode === "B2C" ? subTotalsB2C : subTotalsB2B;
 
   const mainLines = useMemo(() => lines.filter(l => l.kind === "main").sort((a,b) => (a.main_no||0)-(b.main_no||0)), [lines]);
   const subLines = useMemo(() => lines.filter(l => l.kind === "sub").sort((a,b) => (a.sub_no||0)-(b.sub_no||0)), [lines]);
 
-  // Waterfall with running totals + connector points (right edge of bar)
   const waterfallData = useMemo(() => {
     let running = 0;
     return mainLines.map((l, idx) => {
-      const raw = totalsByCode.get(l.code) || 0;
+      const raw = activeTotals.get(l.code) || 0;
       const delta = l.bucket === "revenue" ? raw : -raw;
       const base = delta >= 0 ? running : running + delta;
       const bar = Math.abs(delta);
       const prev = running;
       running += delta;
-      return {
-        idx, code: l.code, name: `#${l.code}`, label: l.label || "", bucket: l.bucket,
-        base, bar, delta, running, prevRunning: prev,
-      };
+      return { idx, code: l.code, name: `#${l.code}`, label: l.label || "", bucket: l.bucket, base, bar, delta, running, prevRunning: prev };
     });
-  }, [mainLines, totalsByCode]);
+  }, [mainLines, activeTotals]);
 
-  const kpis = useMemo(() => {
-    const sum = (codes: string[]) => codes.reduce((s, c) => s + (totalsByCode.get(c) || 0), 0);
+  const kpisFor = (totals: Map<string, number>) => {
+    const sum = (codes: string[]) => codes.reduce((s, c) => s + (totals.get(c) || 0), 0);
     const grossRevenue = sum(["1","2","3","4","5"]);
     const deductions = sum(["6","7","8"]);
     const netRevenue = grossRevenue - deductions;
@@ -74,154 +87,343 @@ function WaterfallPage() {
     const opex = sum(["17","18","19","20","21","22","23","24","25","26","27","28","29"]);
     const pocket = grossMargin - opex;
     return { grossRevenue, deductions, netRevenue, grossMargin, pocket };
-  }, [totalsByCode]);
+  };
+  const kpis = useMemo(() => kpisFor(activeTotals), [activeTotals]);
+  const kpisB2B = useMemo(() => kpisFor(totalsB2B), [totalsB2B]);
+  const kpisB2C = useMemo(() => kpisFor(totalsB2C), [totalsB2C]);
 
   const subData = useMemo(() => subLines.map(l => ({
     code: l.code, name: l.code, label: l.label || "",
-    value: subTotals.get(l.code) || 0,
+    value: activeSub.get(l.code) || 0,
     category: (l.category || "").replace("  └ ", ""),
-  })), [subLines, subTotals]);
+  })), [subLines, activeSub]);
 
   const colorFor = (bucket: string) =>
     bucket === "revenue" ? "var(--marine)" :
     bucket === "deduction" ? "var(--primary)" : "var(--green)";
 
+  // ====== Exports ======
+  const exportExcel = () => {
+    const wb = XLSX.utils.book_new();
+    if (mode === "COMPARE") {
+      const rows = mainLines.map(l => ({
+        "#": l.code,
+        Categoria: l.category || "",
+        Linha: l.label || "",
+        Depto: l.department || "",
+        B2B: totalsB2B.get(l.code) || 0,
+        B2C: totalsB2C.get(l.code) || 0,
+        "Δ (B2B−B2C)": (totalsB2B.get(l.code) || 0) - (totalsB2C.get(l.code) || 0),
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Comparativo");
+    } else {
+      const rows = mainLines.map(l => ({
+        "#": l.code, Categoria: l.category || "", Linha: l.label || "",
+        Depto: l.department || "", Valor: activeTotals.get(l.code) || 0,
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), `Waterfall ${mode}`);
+      const subRows = subLines.map(l => ({
+        "#": l.code, Tipo: (l.category || "").replace("  └ ", ""),
+        Descricao: l.label || "", Valor: activeSub.get(l.code) || 0,
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(subRows), "Linha 7 (sub)");
+    }
+    XLSX.writeFile(wb, `waterfall-${mode.toLowerCase()}-${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const title = mode === "COMPARE" ? "Waterfall — B2B vs B2C" : `Waterfall — ${mode}`;
+    doc.setFontSize(16); doc.text(title, 40, 40);
+    doc.setFontSize(9); doc.setTextColor(120);
+    doc.text(new Date().toLocaleString("pt-BR"), 40, 56);
+
+    if (mode === "COMPARE") {
+      autoTable(doc, {
+        startY: 78,
+        head: [["KPI", "B2B", "B2C", "Δ"]],
+        body: [
+          ["Receita Bruta", fmt(kpisB2B.grossRevenue), fmt(kpisB2C.grossRevenue), fmt(kpisB2B.grossRevenue - kpisB2C.grossRevenue)],
+          ["Deduções", fmt(-kpisB2B.deductions), fmt(-kpisB2C.deductions), fmt(-(kpisB2B.deductions - kpisB2C.deductions))],
+          ["Receita Líquida", fmt(kpisB2B.netRevenue), fmt(kpisB2C.netRevenue), fmt(kpisB2B.netRevenue - kpisB2C.netRevenue)],
+          ["Margem Bruta", fmt(kpisB2B.grossMargin), fmt(kpisB2C.grossMargin), fmt(kpisB2B.grossMargin - kpisB2C.grossMargin)],
+          ["Pocket Margin", fmt(kpisB2B.pocket), fmt(kpisB2C.pocket), fmt(kpisB2B.pocket - kpisB2C.pocket)],
+        ],
+        styles: { fontSize: 9 }, headStyles: { fillColor: [30, 30, 30] },
+      });
+      autoTable(doc, {
+        head: [["#", "Linha", "B2B", "B2C", "Δ"]],
+        body: mainLines.map(l => {
+          const a = totalsB2B.get(l.code) || 0, b = totalsB2C.get(l.code) || 0;
+          return [l.code, l.label || "", fmt(a), fmt(b), fmt(a - b)];
+        }),
+        styles: { fontSize: 8 }, headStyles: { fillColor: [30, 30, 30] },
+        columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
+      });
+    } else {
+      autoTable(doc, {
+        startY: 78,
+        head: [["KPI", "Valor"]],
+        body: [
+          ["Receita Bruta", fmt(kpis.grossRevenue)],
+          ["Deduções", fmt(-kpis.deductions)],
+          ["Receita Líquida", fmt(kpis.netRevenue)],
+          ["Margem Bruta", fmt(kpis.grossMargin)],
+          ["Pocket Margin", fmt(kpis.pocket)],
+        ],
+        styles: { fontSize: 9 }, headStyles: { fillColor: [30, 30, 30] },
+      });
+      autoTable(doc, {
+        head: [["#", "Categoria", "Linha", "Depto", "Valor"]],
+        body: mainLines.map(l => [l.code, l.category || "", l.label || "", l.department || "—", fmt(activeTotals.get(l.code) || 0)]),
+        styles: { fontSize: 8 }, headStyles: { fillColor: [30, 30, 30] },
+        columnStyles: { 4: { halign: "right" } },
+      });
+    }
+    doc.save(`waterfall-${mode.toLowerCase()}-${new Date().toISOString().slice(0,10)}.pdf`);
+  };
+
   return (
     <div className="p-10 space-y-10">
-      <div className="flex items-end justify-between">
+      <div className="flex items-end justify-between flex-wrap gap-6">
         <div>
           <p className="eyebrow">PRICE WATERFALL</p>
           <h1 className="font-display text-4xl text-primary mt-2">Da receita bruta ao custo de servir</h1>
           <p className="text-sm text-muted-foreground mt-2">29 marcos do P&L com prioridade P1 → P2 → P3 → Manual. Clique na linha #7 para abrir as 33 sublinhas de desconto comercial.</p>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="inline-flex border border-border">
-            {(["B2B","B2C"] as const).map(b => (
-              <button key={b} onClick={() => setBu(b)}
-                className={`px-6 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${bu===b ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>
-                {b}
+            {(["B2B","B2C","COMPARE"] as const).map(b => (
+              <button key={b} onClick={() => setMode(b)}
+                className={`px-5 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${mode===b ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>
+                {b === "COMPARE" ? "B2B vs B2C" : b}
               </button>
             ))}
           </div>
-          <Link to="/inputs" className="inline-flex items-center gap-2 bg-[var(--gold)] text-ink px-5 py-3 text-xs uppercase tracking-[0.18em] font-semibold">
-            <Upload className="w-4 h-4" /> Inputs por depto
+          <button onClick={exportExcel} className="inline-flex items-center gap-2 border border-border px-4 py-3 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary">
+            <FileSpreadsheet className="w-4 h-4" /> Excel
+          </button>
+          <button onClick={exportPDF} className="inline-flex items-center gap-2 border border-border px-4 py-3 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary">
+            <FileText className="w-4 h-4" /> PDF
+          </button>
+          <Link to="/inputs" className="inline-flex items-center gap-2 bg-[var(--gold)] text-ink px-4 py-3 text-xs uppercase tracking-[0.18em] font-semibold">
+            <Upload className="w-4 h-4" /> Inputs
           </Link>
         </div>
       </div>
 
+      {mode !== "COMPARE" ? (
+        <>
+          <div className="grid grid-cols-5 gap-px bg-border">
+            {[
+              { label: "Receita Bruta", v: kpis.grossRevenue },
+              { label: "Deduções", v: -kpis.deductions },
+              { label: "Receita Líquida", v: kpis.netRevenue },
+              { label: "Margem Bruta", v: kpis.grossMargin },
+              { label: "Pocket Margin", v: kpis.pocket, highlight: true },
+            ].map((k) => (
+              <div key={k.label} className="bg-card p-6">
+                <p className="eyebrow">{k.label}</p>
+                <p className={`font-display text-3xl mt-3 ${k.highlight ? "text-[var(--gold)]" : "text-primary"}`}>
+                  {fmt(k.v)}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-card border border-border">
+            <div className="px-8 py-5 border-b border-border flex items-center justify-between">
+              <h2 className="font-display text-xl text-primary">Waterfall principal — {mode}</h2>
+              <span className="text-xs text-muted-foreground uppercase tracking-[0.18em]">Receita → Deduções → Custos · linha mostra acumulado</span>
+            </div>
+            <div className="h-[520px] p-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={waterfallData} margin={{ top: 36, right: 30, left: 30, bottom: 30 }}>
+                  <CartesianGrid stroke="var(--stone)" strokeDasharray="2 4" vertical={false} />
+                  <XAxis dataKey="name" stroke="var(--soft)" tick={{ fontSize: 11 }} />
+                  <YAxis stroke="var(--soft)" tick={{ fontSize: 11 }} tickFormatter={(v: number) => fmtShort(v)} />
+                  <Tooltip
+                    cursor={{ fill: "var(--secondary)", opacity: 0.4 }}
+                    contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 0, fontSize: 12 }}
+                    formatter={(value: unknown, _name: unknown, props: { payload?: { delta?: number; label?: string; running?: number } }) => [
+                      `${fmt(Number(props.payload?.delta ?? value))}  ·  acum. ${fmt(props.payload?.running ?? 0)}`,
+                      props.payload?.label || "",
+                    ]}
+                  />
+                  <Bar dataKey="base" stackId="a" fill="transparent" isAnimationActive={false} />
+                  <Bar dataKey="bar" stackId="a" isAnimationActive={false}>
+                    {waterfallData.map((d) => (
+                      <Cell key={d.code} fill={colorFor(d.bucket)}
+                        onClick={() => { if (d.code === "7") setShowSub((v) => !v); }}
+                        style={{ cursor: d.code === "7" ? "pointer" : "default" }} />
+                    ))}
+                    <LabelList dataKey="delta" position="top" formatter={(v: unknown) => fmtShort(Number(v))}
+                      style={{ fontSize: 10, fill: "var(--ink)" }} />
+                  </Bar>
+                  <Line type="stepAfter" dataKey="running" stroke="var(--gold)" strokeWidth={1.5}
+                    dot={{ r: 2, fill: "var(--gold)", stroke: "var(--gold)" }} isAnimationActive={false} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="px-8 py-4 border-t border-border flex items-center justify-between bg-secondary/40">
+              <button onClick={() => setShowSub(v => !v)}
+                className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] font-semibold text-primary">
+                {showSub ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                Linha #7 — Descontos comerciais (sublinhas 7.1–7.33)
+              </button>
+              <span className="text-xs text-muted-foreground">Clique também na barra #7 do gráfico</span>
+            </div>
+          </div>
+
+          {showSub && (
+            <div className="bg-card border border-border">
+              <div className="px-8 py-5 border-b border-border">
+                <h2 className="font-display text-xl text-primary">Drill-down · Linha #7 — 33 tipos de desconto comercial</h2>
+              </div>
+              <div className="h-[420px] p-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={subData} margin={{ top: 20, right: 30, left: 30, bottom: 50 }}>
+                    <CartesianGrid stroke="var(--stone)" strokeDasharray="2 4" vertical={false} />
+                    <XAxis dataKey="name" stroke="var(--soft)" tick={{ fontSize: 10 }} interval={0} angle={-45} textAnchor="end" height={60} />
+                    <YAxis stroke="var(--soft)" tick={{ fontSize: 11 }} tickFormatter={(v: number) => fmtShort(v)} />
+                    <Tooltip
+                      contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 0, fontSize: 12 }}
+                      formatter={(value: unknown, _n: unknown, props: { payload?: { label?: string; category?: string } }) => [fmt(Number(value)), `${props.payload?.category} · ${props.payload?.label}`]}
+                    />
+                    <Bar dataKey="value" fill="var(--primary)" isAnimationActive={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-card border border-border overflow-hidden">
+            <div className="px-8 py-5 border-b border-border">
+              <h2 className="font-display text-xl text-primary">Detalhe por linha</h2>
+            </div>
+            <table className="w-full text-sm">
+              <thead className="bg-secondary/40 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                <tr>
+                  <th className="text-left px-6 py-3">#</th>
+                  <th className="text-left px-6 py-3">Categoria</th>
+                  <th className="text-left px-6 py-3">Linha</th>
+                  <th className="text-left px-6 py-3">Depto</th>
+                  <th className="text-right px-6 py-3">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mainLines.map((l) => (
+                  <tr key={l.code} className="border-t border-border hover:bg-secondary/30">
+                    <td className="px-6 py-3 font-mono text-xs">{l.code}</td>
+                    <td className="px-6 py-3 text-xs text-muted-foreground">{l.category}</td>
+                    <td className="px-6 py-3">{l.label}</td>
+                    <td className="px-6 py-3 text-xs">{l.department || "—"}</td>
+                    <td className="px-6 py-3 text-right font-mono">{fmt(activeTotals.get(l.code) || 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        <CompareView mainLines={mainLines} totalsB2B={totalsB2B} totalsB2C={totalsB2C} kpisB2B={kpisB2B} kpisB2C={kpisB2C} />
+      )}
+    </div>
+  );
+}
+
+function CompareView({
+  mainLines, totalsB2B, totalsB2C, kpisB2B, kpisB2C,
+}: {
+  mainLines: Line[]; totalsB2B: Map<string, number>; totalsB2C: Map<string, number>;
+  kpisB2B: { grossRevenue: number; deductions: number; netRevenue: number; grossMargin: number; pocket: number };
+  kpisB2C: { grossRevenue: number; deductions: number; netRevenue: number; grossMargin: number; pocket: number };
+}) {
+  const kpiRows = [
+    { label: "Receita Bruta", b2b: kpisB2B.grossRevenue, b2c: kpisB2C.grossRevenue },
+    { label: "Deduções", b2b: -kpisB2B.deductions, b2c: -kpisB2C.deductions },
+    { label: "Receita Líquida", b2b: kpisB2B.netRevenue, b2c: kpisB2C.netRevenue },
+    { label: "Margem Bruta", b2b: kpisB2B.grossMargin, b2c: kpisB2C.grossMargin },
+    { label: "Pocket Margin", b2b: kpisB2B.pocket, b2c: kpisB2C.pocket, highlight: true },
+  ];
+  const chartData = mainLines.map(l => ({
+    name: `#${l.code}`,
+    B2B: (totalsB2B.get(l.code) || 0) * (l.bucket === "revenue" ? 1 : -1),
+    B2C: (totalsB2C.get(l.code) || 0) * (l.bucket === "revenue" ? 1 : -1),
+  }));
+  return (
+    <>
       <div className="grid grid-cols-5 gap-px bg-border">
-        {[
-          { label: "Receita Bruta", v: kpis.grossRevenue },
-          { label: "Deduções", v: -kpis.deductions },
-          { label: "Receita Líquida", v: kpis.netRevenue },
-          { label: "Margem Bruta", v: kpis.grossMargin },
-          { label: "Pocket Margin", v: kpis.pocket, highlight: true },
-        ].map((k) => (
+        {kpiRows.map((k) => (
           <div key={k.label} className="bg-card p-6">
             <p className="eyebrow">{k.label}</p>
-            <p className={`font-display text-3xl mt-3 ${k.highlight ? "text-[var(--gold)]" : "text-primary"}`}>
-              {fmt(k.v)}
-            </p>
+            <div className="mt-3 space-y-1">
+              <div className="flex items-baseline justify-between">
+                <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">B2B</span>
+                <span className={`font-display text-lg ${k.highlight ? "text-[var(--gold)]" : "text-primary"}`}>{fmt(k.b2b)}</span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">B2C</span>
+                <span className={`font-display text-lg ${k.highlight ? "text-[var(--gold)]" : "text-primary"}`}>{fmt(k.b2c)}</span>
+              </div>
+              <div className="flex items-baseline justify-between border-t border-border pt-1 mt-1">
+                <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Δ</span>
+                <span className="font-mono text-xs">{fmt(k.b2b - k.b2c)}</span>
+              </div>
+            </div>
           </div>
         ))}
       </div>
 
       <div className="bg-card border border-border">
-        <div className="px-8 py-5 border-b border-border flex items-center justify-between">
-          <h2 className="font-display text-xl text-primary">Waterfall principal — {bu}</h2>
-          <span className="text-xs text-muted-foreground uppercase tracking-[0.18em]">Receita → Deduções → Custos · linha mostra acumulado</span>
+        <div className="px-8 py-5 border-b border-border">
+          <h2 className="font-display text-xl text-primary">Comparativo B2B vs B2C — por linha</h2>
         </div>
-        <div className="h-[520px] p-6">
+        <div className="h-[480px] p-6">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={waterfallData} margin={{ top: 36, right: 30, left: 30, bottom: 30 }}>
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 30, bottom: 30 }}>
               <CartesianGrid stroke="var(--stone)" strokeDasharray="2 4" vertical={false} />
-              <XAxis dataKey="name" stroke="var(--soft)" tick={{ fontSize: 11 }} />
+              <XAxis dataKey="name" stroke="var(--soft)" tick={{ fontSize: 10 }} interval={0} angle={-45} textAnchor="end" height={50} />
               <YAxis stroke="var(--soft)" tick={{ fontSize: 11 }} tickFormatter={(v: number) => fmtShort(v)} />
-              <Tooltip
-                cursor={{ fill: "var(--secondary)", opacity: 0.4 }}
-                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 0, fontSize: 12 }}
-                formatter={(value: unknown, _name: unknown, props: { payload?: { delta?: number; label?: string; running?: number } }) => [
-                  `${fmt(Number(props.payload?.delta ?? value))}  ·  acum. ${fmt(props.payload?.running ?? 0)}`,
-                  props.payload?.label || "",
-                ]}
-              />
-              <Bar dataKey="base" stackId="a" fill="transparent" isAnimationActive={false} />
-              <Bar dataKey="bar" stackId="a" isAnimationActive={false}>
-                {waterfallData.map((d) => (
-                  <Cell key={d.code} fill={colorFor(d.bucket)}
-                    onClick={() => { if (d.code === "7") setShowSub((v) => !v); }}
-                    style={{ cursor: d.code === "7" ? "pointer" : "default" }} />
-                ))}
-                <LabelList dataKey="delta" position="top" formatter={(v: unknown) => fmtShort(Number(v))}
-                  style={{ fontSize: 10, fill: "var(--ink)" }} />
-              </Bar>
-              {/* Connector line: running total points */}
-              <Line type="stepAfter" dataKey="running" stroke="var(--gold)" strokeWidth={1.5}
-                dot={{ r: 2, fill: "var(--gold)", stroke: "var(--gold)" }} isAnimationActive={false} />
-            </ComposedChart>
+              <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 0, fontSize: 12 }} formatter={(v: unknown) => fmt(Number(v))} />
+              <Bar dataKey="B2B" fill="var(--marine)" isAnimationActive={false} />
+              <Bar dataKey="B2C" fill="var(--primary)" isAnimationActive={false} />
+            </BarChart>
           </ResponsiveContainer>
-        </div>
-        <div className="px-8 py-4 border-t border-border flex items-center justify-between bg-secondary/40">
-          <button onClick={() => setShowSub(v => !v)}
-            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] font-semibold text-primary">
-            {showSub ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            Linha #7 — Descontos comerciais (sublinhas 7.1–7.33)
-          </button>
-          <span className="text-xs text-muted-foreground">Clique também na barra #7 do gráfico</span>
         </div>
       </div>
 
-      {showSub && (
-        <div className="bg-card border border-border">
-          <div className="px-8 py-5 border-b border-border">
-            <h2 className="font-display text-xl text-primary">Drill-down · Linha #7 — 33 tipos de desconto comercial</h2>
-            <p className="text-xs text-muted-foreground mt-1">Gráfico separado para preservar a leitura do waterfall principal.</p>
-          </div>
-          <div className="h-[420px] p-6">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={subData} margin={{ top: 20, right: 30, left: 30, bottom: 50 }}>
-                <CartesianGrid stroke="var(--stone)" strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="name" stroke="var(--soft)" tick={{ fontSize: 10 }} interval={0} angle={-45} textAnchor="end" height={60} />
-                <YAxis stroke="var(--soft)" tick={{ fontSize: 11 }} tickFormatter={(v: number) => fmtShort(v)} />
-                <Tooltip
-                  contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 0, fontSize: 12 }}
-                  formatter={(value: unknown, _n: unknown, props: { payload?: { label?: string; category?: string } }) => [fmt(Number(value)), `${props.payload?.category} · ${props.payload?.label}`]}
-                />
-                <Bar dataKey="value" fill="var(--primary)" isAnimationActive={false} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
-
       <div className="bg-card border border-border overflow-hidden">
         <div className="px-8 py-5 border-b border-border">
-          <h2 className="font-display text-xl text-primary">Detalhe por linha</h2>
+          <h2 className="font-display text-xl text-primary">Tabela comparativa</h2>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-secondary/40 text-xs uppercase tracking-[0.12em] text-muted-foreground">
             <tr>
               <th className="text-left px-6 py-3">#</th>
-              <th className="text-left px-6 py-3">Categoria</th>
               <th className="text-left px-6 py-3">Linha</th>
-              <th className="text-left px-6 py-3">Depto</th>
-              <th className="text-right px-6 py-3">Valor</th>
+              <th className="text-right px-6 py-3">B2B</th>
+              <th className="text-right px-6 py-3">B2C</th>
+              <th className="text-right px-6 py-3">Δ (B2B − B2C)</th>
             </tr>
           </thead>
           <tbody>
-            {mainLines.map((l) => (
-              <tr key={l.code} className="border-t border-border hover:bg-secondary/30">
-                <td className="px-6 py-3 font-mono text-xs">{l.code}</td>
-                <td className="px-6 py-3 text-xs text-muted-foreground">{l.category}</td>
-                <td className="px-6 py-3">{l.label}</td>
-                <td className="px-6 py-3 text-xs">{l.department || "—"}</td>
-                <td className="px-6 py-3 text-right font-mono">{fmt(totalsByCode.get(l.code) || 0)}</td>
-              </tr>
-            ))}
+            {mainLines.map((l) => {
+              const a = totalsB2B.get(l.code) || 0, b = totalsB2C.get(l.code) || 0;
+              return (
+                <tr key={l.code} className="border-t border-border hover:bg-secondary/30">
+                  <td className="px-6 py-3 font-mono text-xs">{l.code}</td>
+                  <td className="px-6 py-3">{l.label}</td>
+                  <td className="px-6 py-3 text-right font-mono">{fmt(a)}</td>
+                  <td className="px-6 py-3 text-right font-mono">{fmt(b)}</td>
+                  <td className={`px-6 py-3 text-right font-mono ${a-b >= 0 ? "text-[var(--green)]" : "text-destructive"}`}>{fmt(a - b)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
-    </div>
+    </>
   );
 }
 
