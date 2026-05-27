@@ -22,12 +22,21 @@ export const getWaterfall = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { bu } = data;
 
-    const [{ data: inputs }, { data: lines }, { data: orgNodes }, { data: customers }] = await Promise.all([
+    const [{ data: inputs }, { data: lines }, { data: orgNodesRaw }, { data: salaries }, { data: customers }] = await Promise.all([
       supabaseAdmin.from("line_inputs").select("line_code,customer_id,value,priority,bu,department").eq("bu", bu),
       supabaseAdmin.from("waterfall_lines").select("code,department,kind,bucket,label,main_no,sub_no,sort_order"),
-      supabaseAdmin.from("org_nodes").select("bu,department,leader,channel,account,customer,salary").eq("bu", bu),
+      supabaseAdmin.from("org_nodes").select("id,bu,department,leader,channel,account,customer").eq("bu", bu),
+      supabaseAdmin.from("org_node_salaries").select("org_node_id,salary"),
       supabaseAdmin.from("customers").select("id,customer_name,account_id,account_name,attrs,bu").eq("bu", bu),
     ]);
+
+    const salaryByNodeId = new Map<string, number>();
+    for (const s of salaries || []) salaryByNodeId.set(s.org_node_id, Number(s.salary || 0));
+    const orgNodes: OrgNode[] = (orgNodesRaw || []).map((n) => ({
+      bu: n.bu, department: n.department, leader: n.leader, channel: n.channel,
+      account: n.account, customer: n.customer,
+      salary: salaryByNodeId.get(n.id) || 0,
+    }));
 
     // 1. Reduce per (line_code, customer_id) by priority
     const best = new Map<string, { line_code: string; customer_id: string; value: number; priority: string }>();
