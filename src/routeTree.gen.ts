@@ -16,7 +16,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedWaterfallRouteImport } from './routes/_authenticated.waterfall'
 import { Route as AuthenticatedOrganogramaRouteImport } from './routes/_authenticated.organograma'
 import { Route as AuthenticatedInputsRouteImport } from './routes/_authenticated.inputs'
+import { Route as AuthenticatedCustoDeServirRouteImport } from './routes/_authenticated.custo-de-servir'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated.clientes'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -53,9 +55,20 @@ const AuthenticatedInputsRoute = AuthenticatedInputsRouteImport.update({
   path: '/inputs',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCustoDeServirRoute =
+  AuthenticatedCustoDeServirRouteImport.update({
+    id: '/custo-de-servir',
+    path: '/custo-de-servir',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedClientesRoute = AuthenticatedClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 
@@ -63,7 +76,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/clientes': typeof AuthenticatedClientesRoute
+  '/custo-de-servir': typeof AuthenticatedCustoDeServirRoute
   '/inputs': typeof AuthenticatedInputsRoute
   '/organograma': typeof AuthenticatedOrganogramaRoute
   '/waterfall': typeof AuthenticatedWaterfallRoute
@@ -72,7 +87,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/clientes': typeof AuthenticatedClientesRoute
+  '/custo-de-servir': typeof AuthenticatedCustoDeServirRoute
   '/inputs': typeof AuthenticatedInputsRoute
   '/organograma': typeof AuthenticatedOrganogramaRoute
   '/waterfall': typeof AuthenticatedWaterfallRoute
@@ -83,7 +100,9 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/clientes': typeof AuthenticatedClientesRoute
+  '/_authenticated/custo-de-servir': typeof AuthenticatedCustoDeServirRoute
   '/_authenticated/inputs': typeof AuthenticatedInputsRoute
   '/_authenticated/organograma': typeof AuthenticatedOrganogramaRoute
   '/_authenticated/waterfall': typeof AuthenticatedWaterfallRoute
@@ -94,7 +113,9 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/signup'
+    | '/admin'
     | '/clientes'
+    | '/custo-de-servir'
     | '/inputs'
     | '/organograma'
     | '/waterfall'
@@ -103,7 +124,9 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/signup'
+    | '/admin'
     | '/clientes'
+    | '/custo-de-servir'
     | '/inputs'
     | '/organograma'
     | '/waterfall'
@@ -113,7 +136,9 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/signup'
+    | '/_authenticated/admin'
     | '/_authenticated/clientes'
+    | '/_authenticated/custo-de-servir'
     | '/_authenticated/inputs'
     | '/_authenticated/organograma'
     | '/_authenticated/waterfall'
@@ -177,6 +202,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInputsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/custo-de-servir': {
+      id: '/_authenticated/custo-de-servir'
+      path: '/custo-de-servir'
+      fullPath: '/custo-de-servir'
+      preLoaderRoute: typeof AuthenticatedCustoDeServirRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/clientes': {
       id: '/_authenticated/clientes'
       path: '/clientes'
@@ -184,18 +216,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedClientesRoute: typeof AuthenticatedClientesRoute
+  AuthenticatedCustoDeServirRoute: typeof AuthenticatedCustoDeServirRoute
   AuthenticatedInputsRoute: typeof AuthenticatedInputsRoute
   AuthenticatedOrganogramaRoute: typeof AuthenticatedOrganogramaRoute
   AuthenticatedWaterfallRoute: typeof AuthenticatedWaterfallRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedClientesRoute: AuthenticatedClientesRoute,
+  AuthenticatedCustoDeServirRoute: AuthenticatedCustoDeServirRoute,
   AuthenticatedInputsRoute: AuthenticatedInputsRoute,
   AuthenticatedOrganogramaRoute: AuthenticatedOrganogramaRoute,
   AuthenticatedWaterfallRoute: AuthenticatedWaterfallRoute,

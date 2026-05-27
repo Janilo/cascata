@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart3, Upload, Network, Users, LogOut } from "lucide-react";
+import { BarChart3, Upload, Network, Users, LogOut, TrendingDown, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
@@ -18,6 +18,7 @@ function AuthLayout() {
   const navigate = useNavigate();
   const [name, setName] = useState<string>("");
   const [dept, setDept] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -26,6 +27,8 @@ function AuthLayout() {
       const { data: p } = await supabase.from("profiles").select("full_name,department").eq("id", u.user.id).maybeSingle();
       setName(p?.full_name || u.user.email || "");
       setDept(p?.department || "");
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
+      setIsAdmin((roles || []).some(r => r.role === "admin"));
     })();
   }, []);
 
@@ -37,8 +40,10 @@ function AuthLayout() {
   const navItems = [
     { to: "/waterfall", label: "Waterfall", icon: BarChart3 },
     { to: "/inputs", label: "Inputs", icon: Upload },
+    { to: "/custo-de-servir", label: "Custo de servir", icon: TrendingDown },
     { to: "/organograma", label: "Organograma", icon: Network },
     { to: "/clientes", label: "Clientes", icon: Users },
+    ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
   ];
 
   return (
