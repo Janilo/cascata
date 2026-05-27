@@ -110,6 +110,24 @@ export type Database = {
           },
         ]
       }
+      org_node_salaries: {
+        Row: {
+          org_node_id: string
+          salary: number
+          updated_at: string
+        }
+        Insert: {
+          org_node_id: string
+          salary?: number
+          updated_at?: string
+        }
+        Update: {
+          org_node_id?: string
+          salary?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       org_nodes: {
         Row: {
           account: string | null
@@ -121,7 +139,6 @@ export type Database = {
           id: string
           leader: string | null
           parent_id: string | null
-          salary: number | null
         }
         Insert: {
           account?: string | null
@@ -133,7 +150,6 @@ export type Database = {
           id?: string
           leader?: string | null
           parent_id?: string | null
-          salary?: number | null
         }
         Update: {
           account?: string | null
@@ -145,7 +161,6 @@ export type Database = {
           id?: string
           leader?: string | null
           parent_id?: string | null
-          salary?: number | null
         }
         Relationships: [
           {
