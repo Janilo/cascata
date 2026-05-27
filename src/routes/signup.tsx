@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const DEPARTMENTS = [
-  "Comercial", "PS", "Produto", "Fiscal", "Financeiro",
+  "CEO", "Comercial", "PS", "Produto", "Fiscal", "Financeiro",
   "Tech/Infra", "CS", "Suporte", "PS/Onboarding",
   "Marketing", "Engenharia", "G&A",
 ];
