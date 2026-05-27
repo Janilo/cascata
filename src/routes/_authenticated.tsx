@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart3, Upload, Network, Users, LogOut } from "lucide-react";
+import { BarChart3, Upload, Network, Users, LogOut, TrendingDown, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
