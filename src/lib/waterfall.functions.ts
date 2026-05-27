@@ -19,6 +19,7 @@ type OrgNode = {
 const ORG_LEVELS = ["customer", "account", "channel", "leader", "department", "bu"] as const;
 
 export const getWaterfall = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) => Input.parse(d))
   .handler(async ({ data }) => {
     const { bu } = data;
