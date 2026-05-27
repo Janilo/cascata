@@ -91,7 +91,9 @@ function InputsPage() {
 
   const uploadAndExtract = async (file: File, line: Line) => {
     setBusy(`upload:${line.code}`);
-    const path = `${Date.now()}-${file.name}`;
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) { alert("Sessão expirada"); setBusy(null); return; }
+    const path = `${u.user.id}/${Date.now()}-${file.name}`;
     const { error: upErr } = await supabase.storage.from("inputs").upload(path, file);
     if (upErr) { alert(upErr.message); setBusy(null); return; }
     // Parse XLSX/CSV/TXT to plain text (then send to AI)
