@@ -14,16 +14,249 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          account_id: string | null
+          account_name: string | null
+          attrs: Json
+          bu: string
+          cnpj: string | null
+          created_at: string
+          created_by: string | null
+          customer_name: string
+          id: string
+        }
+        Insert: {
+          account_id?: string | null
+          account_name?: string | null
+          attrs?: Json
+          bu: string
+          cnpj?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name: string
+          id?: string
+        }
+        Update: {
+          account_id?: string | null
+          account_name?: string | null
+          attrs?: Json
+          bu?: string
+          cnpj?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      line_inputs: {
+        Row: {
+          ai_extraction: Json | null
+          bu: string
+          customer_id: string
+          department: string
+          file_path: string | null
+          id: string
+          line_code: string
+          priority: string
+          rateio_key: string | null
+          updated_at: string
+          updated_by: string | null
+          value: number | null
+        }
+        Insert: {
+          ai_extraction?: Json | null
+          bu: string
+          customer_id: string
+          department: string
+          file_path?: string | null
+          id?: string
+          line_code: string
+          priority?: string
+          rateio_key?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: number | null
+        }
+        Update: {
+          ai_extraction?: Json | null
+          bu?: string
+          customer_id?: string
+          department?: string
+          file_path?: string | null
+          id?: string
+          line_code?: string
+          priority?: string
+          rateio_key?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "line_inputs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "line_inputs_line_code_fkey"
+            columns: ["line_code"]
+            isOneToOne: false
+            referencedRelation: "waterfall_lines"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      org_nodes: {
+        Row: {
+          account: string | null
+          bu: string | null
+          channel: string | null
+          created_at: string
+          customer: string | null
+          department: string | null
+          id: string
+          leader: string | null
+          parent_id: string | null
+          salary: number | null
+        }
+        Insert: {
+          account?: string | null
+          bu?: string | null
+          channel?: string | null
+          created_at?: string
+          customer?: string | null
+          department?: string | null
+          id?: string
+          leader?: string | null
+          parent_id?: string | null
+          salary?: number | null
+        }
+        Update: {
+          account?: string | null
+          bu?: string | null
+          channel?: string | null
+          created_at?: string
+          customer?: string | null
+          department?: string | null
+          id?: string
+          leader?: string | null
+          parent_id?: string | null
+          salary?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_nodes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "org_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          department: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      waterfall_lines: {
+        Row: {
+          bucket: string
+          category: string | null
+          code: string
+          department: string | null
+          kind: string
+          label: string | null
+          main_no: number | null
+          p1_desc: string | null
+          p2_desc: string | null
+          p3_desc: string | null
+          sort_order: number
+          sub_no: number | null
+        }
+        Insert: {
+          bucket: string
+          category?: string | null
+          code: string
+          department?: string | null
+          kind: string
+          label?: string | null
+          main_no?: number | null
+          p1_desc?: string | null
+          p2_desc?: string | null
+          p3_desc?: string | null
+          sort_order: number
+          sub_no?: number | null
+        }
+        Update: {
+          bucket?: string
+          category?: string | null
+          code?: string
+          department?: string | null
+          kind?: string
+          label?: string | null
+          main_no?: number | null
+          p1_desc?: string | null
+          p2_desc?: string | null
+          p3_desc?: string | null
+          sort_order?: number
+          sub_no?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_department: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +383,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "member"],
+    },
   },
 } as const
