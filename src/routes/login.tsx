@@ -1,6 +1,7 @@
-import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({ redirect: (s.redirect as string) || "/waterfall" }),
@@ -24,6 +25,15 @@ function LoginPage() {
     if (error) { setErr(error.message); return; }
     navigate({ to: redirectTo });
   };
+
+  const onGoogle = async () => {
+    setErr(null);
+    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+    if (result.error) { setErr(result.error.message); return; }
+    if (result.redirected) return;
+    navigate({ to: redirectTo });
+  };
+
 
   return (
     <div className="min-h-screen flex">
@@ -49,6 +59,10 @@ function LoginPage() {
           <button type="submit" disabled={loading} className="mt-8 w-full bg-primary text-primary-foreground py-4 text-sm font-semibold uppercase tracking-[0.18em] disabled:opacity-60">
             {loading ? "Entrando…" : "Entrar"}
           </button>
+          <button type="button" onClick={onGoogle} className="mt-3 w-full border border-foreground/20 py-4 text-sm font-semibold uppercase tracking-[0.18em] hover:bg-foreground/5">
+            Entrar com Google
+          </button>
+
           <p className="mt-6 text-sm text-muted-foreground">
             Sem conta? <Link to="/signup" className="text-primary underline underline-offset-4">Criar conta</Link>
           </p>
