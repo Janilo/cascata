@@ -3,6 +3,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ShieldCheck, ShieldOff, Check, X } from "lucide-react";
 
+const DEPARTMENTS = [
+  "CEO", "Comercial", "PS", "Produto", "Fiscal", "Financeiro",
+  "Tech/Infra", "CS", "Suporte", "PS/Onboarding",
+  "Marketing", "Engenharia", "G&A",
+];
+
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
     const { data: u } = await supabase.auth.getUser();
