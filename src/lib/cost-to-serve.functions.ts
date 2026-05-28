@@ -4,11 +4,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const Input = z.object({ customer_id: z.string().uuid() });
 const PRIORITY_ORDER = ["P1", "P2", "P3", "MANUAL", "RATEIO"] as const;
 
 export const getCustomerPnL = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) => Input.parse(d))
   .handler(async ({ data }) => {
     const { customer_id } = data;
