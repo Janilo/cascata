@@ -283,6 +283,47 @@ function WaterfallPage() {
         </div>
       </div>
 
+      <div className="bg-card border border-border p-4 flex flex-wrap items-end gap-4">
+        <div className="flex flex-col gap-1">
+          <span className="eyebrow text-[10px]">Departamento</span>
+          <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)}
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[160px]">
+            <option value="">Todos</option>
+            {deptOptions.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="eyebrow text-[10px]">Líder</span>
+          <select value={filterLeader} onChange={(e) => setFilterLeader(e.target.value)}
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[160px]">
+            <option value="">Todos</option>
+            {leaderOptions.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="eyebrow text-[10px]">Conta</span>
+          <select value={filterAccount} onChange={(e) => { setFilterAccount(e.target.value); setFilterCustomer(""); }}
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[180px]">
+            <option value="">Todas</option>
+            {accountOptions.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="eyebrow text-[10px]">Cliente</span>
+          <select value={filterCustomer} onChange={(e) => setFilterCustomer(e.target.value)}
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[220px]">
+            <option value="">Todos</option>
+            {customerOptions.map(c => <option key={c.id} value={c.id}>{c.customer_name}</option>)}
+          </select>
+        </div>
+        {(filterDept || filterLeader || filterAccount || filterCustomer) && (
+          <button onClick={() => { setFilterDept(""); setFilterLeader(""); setFilterAccount(""); setFilterCustomer(""); }}
+            className="border border-border px-4 py-2 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary">
+            Limpar filtros
+          </button>
+        )}
+      </div>
+
       {mode !== "COMPARE" ? (
         <>
           <div className="grid grid-cols-5 gap-px bg-border">
