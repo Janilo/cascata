@@ -3,12 +3,6 @@ import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
-const DEPARTMENTS = [
-  "CEO", "Comercial", "PS", "Produto", "Fiscal", "Financeiro",
-  "Tech/Infra", "CS", "Suporte", "PS/Onboarding",
-  "Marketing", "Engenharia", "G&A",
-];
-
 export const Route = createFileRoute("/signup")({
   component: SignupPage,
 });
@@ -18,7 +12,6 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [department, setDepartment] = useState(DEPARTMENTS[0]);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +22,7 @@ function SignupPage() {
       email, password,
       options: {
         emailRedirectTo: window.location.origin,
-        data: { full_name: fullName, department },
+        data: { full_name: fullName },
       },
     });
     setLoading(false);
@@ -66,17 +59,10 @@ function SignupPage() {
             <Field label="Nome completo" type="text" value={fullName} onChange={setFullName} required />
             <Field label="Email" type="email" value={email} onChange={setEmail} required />
             <Field label="Senha" type="password" value={password} onChange={setPassword} required />
-            <label className="block">
-              <span className="eyebrow block mb-2">Departamento</span>
-              <select
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                className="w-full bg-transparent border-0 border-b border-foreground/40 focus:border-primary focus:outline-none py-2 text-foreground"
-              >
-                {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </label>
           </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            Seu departamento será atribuído por um administrador após a aprovação da conta.
+          </p>
           {err && <p className="text-xs text-destructive mt-4">{err}</p>}
           <button type="submit" disabled={loading} className="mt-8 w-full bg-primary text-primary-foreground py-4 text-sm font-semibold uppercase tracking-[0.18em] disabled:opacity-60">
             {loading ? "Criando…" : "Criar conta"}
