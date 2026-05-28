@@ -70,6 +70,11 @@ function AdminPage() {
     load();
   };
 
+  const setDepartment = async (userId: string, department: string) => {
+    await supabase.from("profiles").update({ department: department || null }).eq("id", userId);
+    load();
+  };
+
   return (
     <div className="p-10 space-y-8">
       <div>
