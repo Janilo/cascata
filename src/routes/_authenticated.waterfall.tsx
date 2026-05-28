@@ -24,6 +24,8 @@ type Line = {
 
 type Mode = "B2B" | "B2C" | "COMPARE";
 
+type CustomerOpt = { id: string; customer_name: string; account_name: string | null; account_id: string | null; bu: string; attrs: Record<string, unknown> };
+
 function WaterfallPage() {
   const [mode, setMode] = useState<Mode>("B2B");
   const [lines, setLines] = useState<Line[]>([]);
@@ -32,31 +34,100 @@ function WaterfallPage() {
   const [showSub, setShowSub] = useState(false);
   const [subTotalsB2B, setSubTotalsB2B] = useState<Map<string, number>>(new Map());
   const [subTotalsB2C, setSubTotalsB2C] = useState<Map<string, number>>(new Map());
+  const [customers, setCustomers] = useState<CustomerOpt[]>([]);
+  const [filterDept, setFilterDept] = useState<string>("");
+  const [filterLeader, setFilterLeader] = useState<string>("");
+  const [filterAccount, setFilterAccount] = useState<string>("");
+  const [filterCustomer, setFilterCustomer] = useState<string>("");
   const callWaterfall = useServerFn(getWaterfall);
 
   useEffect(() => {
     (async () => {
-      const { data: ls } = await supabase.from("waterfall_lines").select("*").order("sort_order");
+      const [{ data: ls }, { data: cs }] = await Promise.all([
+        supabase.from("waterfall_lines").select("*").order("sort_order"),
+        supabase.from("customers").select("id,customer_name,account_name,account_id,bu,attrs"),
+      ]);
       setLines((ls as Line[]) || []);
+      setCustomers((cs as CustomerOpt[]) || []);
     })();
   }, []);
+
+  const filterArgs = useMemo(() => ({
+    department: filterDept || undefined,
+    leader: filterLeader || undefined,
+    account: filterAccount || undefined,
+    customerId: filterCustomer || undefined,
+  }), [filterDept, filterLeader, filterAccount, filterCustomer]);
 
   useEffect(() => {
     (async () => {
       const need: ("B2B" | "B2C")[] = mode === "COMPARE" ? ["B2B", "B2C"] : [mode];
       for (const bu of need) {
-        const wf = await callWaterfall({ data: { bu } });
+        const wf = await callWaterfall({ data: { bu, ...filterArgs } });
         const totals = new Map(Object.entries(wf.totalsByCode));
         if (bu === "B2B") setTotalsB2B(totals); else setTotalsB2C(totals);
-        const { data: subs } = await supabase.from("line_inputs").select("line_code,value").eq("bu", bu);
+        let q = supabase.from("line_inputs").select("line_code,value,customer_id,department").eq("bu", bu);
+        if (filterArgs.department) q = q.eq("department", filterArgs.department);
+        const { data: subs } = await q;
+        // Build allowed customer ids matching account/leader/customer filters
+        const allowed = new Set(
+          customers
+            .filter(c => {
+              if (filterCustomer && c.id !== filterCustomer) return false;
+              if (filterAccount && c.account_name !== filterAccount && c.account_id !== filterAccount) return false;
+              const a = c.attrs || {};
+              if (filterLeader && a.leader !== filterLeader) return false;
+              return true;
+            })
+            .map(c => c.id)
+        );
+        const anyCustFilter = !!(filterCustomer || filterAccount || filterLeader);
         const m = new Map<string, number>();
         for (const r of subs || []) {
+          if (anyCustFilter && !allowed.has(r.customer_id)) continue;
           if (r.line_code.startsWith("7.")) m.set(r.line_code, (m.get(r.line_code) || 0) + Number(r.value || 0));
         }
         if (bu === "B2B") setSubTotalsB2B(m); else setSubTotalsB2C(m);
       }
     })();
-  }, [mode, callWaterfall]);
+  }, [mode, callWaterfall, filterArgs, customers, filterCustomer, filterAccount, filterLeader]);
+
+  const deptOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const c of customers) {
+      const d = (c.attrs as Record<string, unknown>)?.department;
+      if (typeof d === "string" && d) s.add(d);
+    }
+    for (const l of lines) if (l.department) s.add(l.department);
+    return Array.from(s).sort();
+  }, [customers, lines]);
+
+  const leaderOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const c of customers) {
+      const v = (c.attrs as Record<string, unknown>)?.leader;
+      if (typeof v === "string" && v) s.add(v);
+    }
+    return Array.from(s).sort();
+  }, [customers]);
+
+  const accountOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const c of customers) if (c.account_name) s.add(c.account_name);
+    return Array.from(s).sort();
+  }, [customers]);
+
+  const customerOptions = useMemo(() => {
+    return customers
+      .filter(c => {
+        if (filterAccount && c.account_name !== filterAccount && c.account_id !== filterAccount) return false;
+        const a = c.attrs || {};
+        if (filterLeader && a.leader !== filterLeader) return false;
+        if (filterDept && a.department !== filterDept) return false;
+        return true;
+      })
+      .sort((a, b) => a.customer_name.localeCompare(b.customer_name));
+  }, [customers, filterAccount, filterLeader, filterDept]);
 
   const activeTotals = mode === "B2C" ? totalsB2C : totalsB2B;
   const activeSub = mode === "B2C" ? subTotalsB2C : subTotalsB2B;
@@ -210,6 +281,47 @@ function WaterfallPage() {
             <Upload className="w-4 h-4" /> Inputs
           </Link>
         </div>
+      </div>
+
+      <div className="bg-card border border-border p-4 flex flex-wrap items-end gap-4">
+        <div className="flex flex-col gap-1">
+          <span className="eyebrow text-[10px]">Departamento</span>
+          <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)}
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[160px]">
+            <option value="">Todos</option>
+            {deptOptions.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="eyebrow text-[10px]">Líder</span>
+          <select value={filterLeader} onChange={(e) => setFilterLeader(e.target.value)}
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[160px]">
+            <option value="">Todos</option>
+            {leaderOptions.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="eyebrow text-[10px]">Conta</span>
+          <select value={filterAccount} onChange={(e) => { setFilterAccount(e.target.value); setFilterCustomer(""); }}
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[180px]">
+            <option value="">Todas</option>
+            {accountOptions.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="eyebrow text-[10px]">Cliente</span>
+          <select value={filterCustomer} onChange={(e) => setFilterCustomer(e.target.value)}
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[220px]">
+            <option value="">Todos</option>
+            {customerOptions.map(c => <option key={c.id} value={c.id}>{c.customer_name}</option>)}
+          </select>
+        </div>
+        {(filterDept || filterLeader || filterAccount || filterCustomer) && (
+          <button onClick={() => { setFilterDept(""); setFilterLeader(""); setFilterAccount(""); setFilterCustomer(""); }}
+            className="border border-border px-4 py-2 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary">
+            Limpar filtros
+          </button>
+        )}
       </div>
 
       {mode !== "COMPARE" ? (
