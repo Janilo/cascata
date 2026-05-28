@@ -131,6 +131,56 @@ function AdminPage() {
           </tbody>
         </table>
       </div>
+
+      <div>
+        <p className="eyebrow">AUDITORIA</p>
+        <h2 className="font-display text-2xl text-primary mt-2">Histórico de alterações — Waterfall</h2>
+        <p className="text-sm text-muted-foreground mt-2">
+          Últimas 200 mudanças nas linhas do waterfall (quem, quando, valor anterior e novo).
+        </p>
+      </div>
+
+      <div className="bg-card border border-border overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-secondary/40 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+            <tr>
+              <th className="text-left px-6 py-3">Quando</th>
+              <th className="text-left px-6 py-3">Usuário</th>
+              <th className="text-left px-6 py-3">Ação</th>
+              <th className="text-left px-6 py-3">Linha</th>
+              <th className="text-left px-6 py-3">BU</th>
+              <th className="text-left px-6 py-3">Depto</th>
+              <th className="text-right px-6 py-3">Valor anterior</th>
+              <th className="text-right px-6 py-3">Valor novo</th>
+              <th className="text-right px-6 py-3">Δ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {!loading && audit.length === 0 && (
+              <tr><td colSpan={9} className="px-6 py-12 text-center text-muted-foreground">Nenhuma alteração registrada ainda.</td></tr>
+            )}
+            {audit.map(a => {
+              const delta = (a.new_value ?? 0) - (a.old_value ?? 0);
+              const fmt = (v: number | null) => v == null ? "—" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+              return (
+                <tr key={a.id} className="border-t border-border">
+                  <td className="px-6 py-2 text-xs text-muted-foreground whitespace-nowrap">{new Date(a.changed_at).toLocaleString("pt-BR")}</td>
+                  <td className="px-6 py-2 text-xs">{a.changed_by ? (nameById.get(a.changed_by) || a.changed_by.slice(0, 8)) : "—"}</td>
+                  <td className="px-6 py-2">
+                    <span className={`inline-block px-2 py-0.5 text-[10px] uppercase tracking-wider rounded ${a.action === "INSERT" ? "bg-emerald-600 text-white" : a.action === "DELETE" ? "bg-destructive text-destructive-foreground" : "bg-secondary"}`}>{a.action}</span>
+                  </td>
+                  <td className="px-6 py-2 font-mono text-xs">{a.line_code || "—"}</td>
+                  <td className="px-6 py-2 text-xs">{a.bu || "—"}</td>
+                  <td className="px-6 py-2 text-xs">{a.department || "—"}</td>
+                  <td className="px-6 py-2 text-right font-mono text-xs">{fmt(a.old_value)}</td>
+                  <td className="px-6 py-2 text-right font-mono text-xs">{fmt(a.new_value)}</td>
+                  <td className={`px-6 py-2 text-right font-mono text-xs ${delta > 0 ? "text-emerald-600" : delta < 0 ? "text-destructive" : "text-muted-foreground"}`}>{delta === 0 ? "—" : fmt(delta)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
