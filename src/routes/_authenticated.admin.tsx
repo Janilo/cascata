@@ -15,6 +15,11 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 type Row = { id: string; full_name: string | null; department: string | null; role: string; is_approved: boolean };
+type AuditRow = {
+  id: string; action: string; line_code: string | null; bu: string | null;
+  department: string | null; old_value: number | null; new_value: number | null;
+  changed_by: string | null; changed_at: string;
+};
 
 function AdminPage() {
   const [rows, setRows] = useState<Row[]>([]);
