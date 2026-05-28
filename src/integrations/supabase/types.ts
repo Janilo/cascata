@@ -110,6 +110,54 @@ export type Database = {
           },
         ]
       }
+      line_inputs_audit: {
+        Row: {
+          action: string
+          bu: string | null
+          changed_at: string
+          changed_by: string | null
+          customer_id: string | null
+          department: string | null
+          id: string
+          line_code: string | null
+          line_input_id: string | null
+          new_row: Json | null
+          new_value: number | null
+          old_row: Json | null
+          old_value: number | null
+        }
+        Insert: {
+          action: string
+          bu?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          customer_id?: string | null
+          department?: string | null
+          id?: string
+          line_code?: string | null
+          line_input_id?: string | null
+          new_row?: Json | null
+          new_value?: number | null
+          old_row?: Json | null
+          old_value?: number | null
+        }
+        Update: {
+          action?: string
+          bu?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          customer_id?: string | null
+          department?: string | null
+          id?: string
+          line_code?: string | null
+          line_input_id?: string | null
+          new_row?: Json | null
+          new_value?: number | null
+          old_row?: Json | null
+          old_value?: number | null
+        }
+        Relationships: []
+      }
       org_node_salaries: {
         Row: {
           org_node_id: string
