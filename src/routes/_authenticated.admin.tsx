@@ -101,7 +101,16 @@ function AdminPage() {
             {!loading && rows.map(r => (
               <tr key={r.id} className="border-t border-border">
                 <td className="px-6 py-3">{r.full_name || "—"}</td>
-                <td className="px-6 py-3 text-xs uppercase tracking-wider text-muted-foreground">{r.department || "—"}</td>
+                <td className="px-6 py-3 text-xs">
+                  <select
+                    value={r.department || ""}
+                    onChange={(e) => setDepartment(r.id, e.target.value)}
+                    className="bg-transparent border border-border rounded px-2 py-1 text-xs uppercase tracking-wider"
+                  >
+                    <option value="">—</option>
+                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </td>
                 <td className="px-6 py-3">
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-wider rounded ${r.is_approved ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
                     {r.is_approved ? <><Check className="w-3 h-3" /> Sim</> : <><X className="w-3 h-3" /> Não</>}
