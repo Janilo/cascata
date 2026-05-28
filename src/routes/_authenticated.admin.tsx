@@ -25,6 +25,9 @@ function AdminPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [nameById, setNameById] = useState<Map<string, string>>(new Map());
+
   const load = async () => {
     setLoading(true);
     const { data: profiles } = await supabase.from("profiles").select("id,full_name,department,is_approved");
@@ -37,6 +40,15 @@ function AdminPage() {
       role: roleByUser.get(p.id) || "member",
     }));
     setRows(merged);
+    const names = new Map<string, string>();
+    for (const p of profiles || []) names.set(p.id, p.full_name || p.id.slice(0, 8));
+    setNameById(names);
+    const { data: a } = await supabase
+      .from("line_inputs_audit")
+      .select("id,action,line_code,bu,department,old_value,new_value,changed_by,changed_at")
+      .order("changed_at", { ascending: false })
+      .limit(200);
+    setAudit((a as AuditRow[]) || []);
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
