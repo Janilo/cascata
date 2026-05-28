@@ -51,7 +51,7 @@ function AuthLayout() {
       <aside className="w-64 border-r border-border bg-card flex flex-col">
         <Link to="/" className="p-6 border-b border-border">
           <span className="font-display text-2xl text-primary">Cascata</span>
-          <p className="eyebrow mt-1">por J P Saraiva</p>
+          <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="eyebrow mt-1">por J P Saraiva</a>
         </Link>
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((it) => (

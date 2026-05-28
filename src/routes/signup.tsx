@@ -49,7 +49,7 @@ function SignupPage() {
             Cada departamento<br/>vê só o seu pedaço<br/>do waterfall.
           </h2>
         </div>
-        <p className="text-xs uppercase tracking-[0.18em] opacity-60">por J P Saraiva</p>
+        <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="text-xs uppercase tracking-[0.18em] opacity-60">por J P Saraiva</a>
       </div>
       <div className="flex-1 flex items-center justify-center p-12">
         <form onSubmit={onSubmit} className="w-full max-w-sm">
