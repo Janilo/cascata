@@ -79,9 +79,17 @@ function LandingPage() {
         </div>
       </section>
 
-      <footer className="px-12 py-8 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-        <span>Cascata · 2026</span>
-        <span className="uppercase tracking-[0.18em]">Price waterfall · IA · P&L por cliente</span>
+      <footer className="px-12 border-t border-border text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-5 border-b border-border uppercase tracking-[0.18em]">
+          <span className="font-semibold">Outros produtos</span>
+          <a href="https://prisma.pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Prisma <span className="opacity-50">· Marketing Mix Modeling</span></a>
+          <a href="https://lente.pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Lente <span className="opacity-50">· Pesquisa Qualitativa</span></a>
+          <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">pereirasaraiva.com</a>
+        </div>
+        <div className="flex items-center justify-between py-5">
+          <span>Cascata · 2026</span>
+          <span className="uppercase tracking-[0.18em]">Price waterfall · IA · P&L por cliente</span>
+        </div>
       </footer>
     </div>
   );
