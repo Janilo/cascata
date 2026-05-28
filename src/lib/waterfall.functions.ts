@@ -7,7 +7,13 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const Input = z.object({ bu: z.enum(["B2B", "B2C"]) });
+const Input = z.object({
+  bu: z.enum(["B2B", "B2C"]),
+  department: z.string().optional(),
+  leader: z.string().optional(),
+  account: z.string().optional(),
+  customerId: z.string().optional(),
+});
 const PRIORITY_ORDER = ["P1", "P2", "P3", "MANUAL", "RATEIO"] as const;
 
 type OrgNode = {
@@ -16,13 +22,11 @@ type OrgNode = {
   salary: number | null;
 };
 
-const ORG_LEVELS = ["customer", "account", "channel", "leader", "department", "bu"] as const;
-
 export const getWaterfall = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => Input.parse(d))
   .handler(async ({ data }) => {
-    const { bu } = data;
+    const { bu, department, leader, account, customerId } = data;
 
     const [{ data: inputs }, { data: lines }, { data: orgNodesRaw }, { data: salaries }, { data: customers }] = await Promise.all([
       supabaseAdmin.from("line_inputs").select("line_code,customer_id,value,priority,bu,department").eq("bu", bu),
@@ -40,16 +44,34 @@ export const getWaterfall = createServerFn({ method: "POST" })
       salary: salaryByNodeId.get(n.id) || 0,
     }));
 
-    // 1. Reduce per (line_code, customer_id) by priority
+    // Build the set of allowed customer ids based on filters
+    const allowedCustomerIds = new Set<string>();
+    const filteredCustomers = (customers || []).filter(c => {
+      if (customerId && c.id !== customerId) return false;
+      if (account && c.account_name !== account && c.account_id !== account) return false;
+      const a = (c.attrs as Record<string, unknown>) || {};
+      if (leader && a.leader !== leader) return false;
+      if (department && a.department !== department) return false;
+      return true;
+    });
+    for (const c of filteredCustomers) allowedCustomerIds.add(c.id);
+
+    const customerFilterActive = !!(customerId || account || leader || (department && !department));
+    const anyCustomerFilter = !!(customerId || account || leader);
+
+    // 1. Reduce per (line_code, customer_id) by priority — applying filters
     const best = new Map<string, { line_code: string; customer_id: string; value: number; priority: string }>();
     for (const r of inputs || []) {
       if (r.value === null || r.value === undefined) continue;
+      if (department && r.department !== department) continue;
+      if (anyCustomerFilter && !allowedCustomerIds.has(r.customer_id)) continue;
       const key = `${r.line_code}__${r.customer_id}`;
       const cur = best.get(key);
       const pCur = cur ? PRIORITY_ORDER.indexOf(cur.priority as (typeof PRIORITY_ORDER)[number]) : 99;
       const pNew = PRIORITY_ORDER.indexOf(r.priority as (typeof PRIORITY_ORDER)[number]);
       if (!cur || pNew < pCur) best.set(key, { line_code: r.line_code, customer_id: r.customer_id, value: Number(r.value), priority: r.priority });
     }
+    void customerFilterActive;
 
     // 2. Aggregate line totals
     const totals = new Map<string, number>();
@@ -64,27 +86,23 @@ export const getWaterfall = createServerFn({ method: "POST" })
       }
     }
 
-    // 4. Allocate salaries with hierarchy fallback.
-    // Each org_node has a salary and an org path (bu/dept/leader/channel/account/customer).
-    // The "last complete level" = the deepest level that has a value on the node.
-    // Salary is allocated to the customers under that node, weighted by revenue
-    // (equal split if no revenue data).
+    // 4. Allocate salaries with hierarchy fallback — also respecting filters
     const personnelLine =
       (lines || []).find(l => l.kind === "main" && (l.label || "").toLowerCase().includes("pessoal"))?.code ||
       (lines || []).find(l => l.kind === "main" && l.bucket === "cost")?.code;
 
     let salaryTotal = 0;
     if (personnelLine && customers) {
-      for (const node of (orgNodes || []) as OrgNode[]) {
+      for (const node of orgNodes) {
+        if (department && node.department && node.department !== department) continue;
+        if (leader && node.leader && node.leader !== leader) continue;
+        if (account && node.account && node.account !== account) continue;
         const sal = Number(node.salary || 0);
         if (!sal) continue;
-        salaryTotal += sal;
 
-        // Find last complete level (deepest non-null among ORG_LEVELS, narrowest first)
-        const matchCustomers = customers.filter(c => {
+        const matchCustomers = filteredCustomers.filter(c => {
           if (node.customer) return c.customer_name === node.customer;
           if (node.account) return c.account_name === node.account || c.account_id === node.account;
-          // Fall back to attrs-based filtering for channel/leader/dept
           const a = (c.attrs as Record<string, unknown>) || {};
           if (node.channel && a.channel !== node.channel) return false;
           if (node.leader && a.leader !== node.leader) return false;
@@ -93,8 +111,9 @@ export const getWaterfall = createServerFn({ method: "POST" })
           return true;
         });
 
+        salaryTotal += sal;
+
         if (matchCustomers.length === 0) {
-          // Nothing to allocate to → drop into the personnel line as a lump sum
           totals.set(personnelLine, (totals.get(personnelLine) || 0) + sal);
           continue;
         }
@@ -105,7 +124,6 @@ export const getWaterfall = createServerFn({ method: "POST" })
           const each = sal / matchCustomers.length;
           totals.set(personnelLine, (totals.get(personnelLine) || 0) + each * matchCustomers.length);
         } else {
-          // Add the whole sal proportionally → still sums to sal
           totals.set(personnelLine, (totals.get(personnelLine) || 0) + sal);
         }
       }
