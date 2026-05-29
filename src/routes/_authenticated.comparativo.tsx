@@ -205,7 +205,7 @@ function ComparativoPage() {
               <YAxis yAxisId="left" tickFormatter={compact} stroke="hsl(var(--muted-foreground))" fontSize={12} />
               <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${v}%`} stroke="hsl(var(--muted-foreground))" fontSize={12} />
               <Tooltip
-                formatter={(value: number, name: string) => name === "Pocket %" ? `${value}%` : brl(value)}
+                formatter={(value, name) => name === "Pocket %" ? `${value}%` : brl(Number(value))}
                 contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
