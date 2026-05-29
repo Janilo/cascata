@@ -50,17 +50,17 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      <div className="hidden md:flex w-1/2 bg-primary text-primary-foreground p-16 flex-col justify-between">
+      <aside className="hidden md:flex w-1/2 bg-primary text-primary-foreground p-16 flex-col justify-between" aria-hidden="true">
         <Link to="/" className="font-display text-2xl">Cascata</Link>
         <div>
           <p className="eyebrow !text-[var(--gold)] mb-6">PRICING · WATERFALL</p>
-          <h2 className="font-display text-5xl italic leading-tight">
+          <p className="font-display text-5xl italic leading-tight">
             Entre para abrir<br/>o seu P&L<br/>por cliente.
-          </h2>
+          </p>
         </div>
         <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="text-xs uppercase tracking-[0.18em] opacity-60">por J P Saraiva</a>
-      </div>
-      <div className="flex-1 flex items-center justify-center p-12">
+      </aside>
+      <main className="flex-1 flex items-center justify-center p-12">
         <form onSubmit={onSubmit} className="w-full max-w-sm">
           <p className="eyebrow mb-6">ENTRAR</p>
           <h1 className="font-display text-4xl text-primary mb-10">Bem-vindo de volta.</h1>
@@ -80,7 +80,7 @@ function LoginPage() {
             Sem conta? <Link to="/signup" className="text-primary underline underline-offset-4">Criar conta</Link>
           </p>
         </form>
-      </div>
+      </main>
     </div>
   );
 }
