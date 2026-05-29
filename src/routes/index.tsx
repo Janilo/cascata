@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Eye } from "lucide-react";
 import { useState } from "react";
+import { CascataWordmark } from "@/components/brand/CascataWordmark";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -65,10 +66,8 @@ function LandingPage() {
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="px-12 py-8 flex items-center justify-between border-b border-border">
-        <Link to="/" className="flex items-baseline gap-3">
-          <span className="font-display text-3xl text-primary" style={{ fontVariationSettings: '"opsz" 144' }}>
-            Cascata
-          </span>
+        <Link to="/" className="flex items-center gap-3" aria-label="Cascata — início">
+          <CascataWordmark height={30} />
           <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="eyebrow">por J P Saraiva</a>
         </Link>
         <nav className="flex items-center gap-8 text-sm">
@@ -91,9 +90,9 @@ function LandingPage() {
       <main className="flex-1">
         <section className="px-12 py-24">
           <div className="max-w-4xl">
-            <p className="eyebrow mb-8">PRICING · WATERFALL</p>
+            <p className="eyebrow mb-8">Cascata · Pricing · Waterfall</p>
             <h1 className="font-display text-6xl md:text-7xl lg:text-8xl leading-[1.05] text-primary mb-10">
-              Decompõe a receita até o <span className="italic font-normal text-[var(--purple-deep)]">custo de servir</span>, cliente a cliente.
+              Da receita bruta <em className="italic font-normal text-[var(--cascata-navy-deep)]">ao custo de servir</em>, cliente a cliente.
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mb-12">
               Cada departamento alimenta as linhas que conhece. A IA lê os arquivos enviados, identifica os campos por cliente, e o price waterfall se monta — com drill-down nos 33 tipos de desconto comercial e separação por BU.

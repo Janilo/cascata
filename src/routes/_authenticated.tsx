@@ -2,6 +2,7 @@ import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart3, Upload, Network, Users, LogOut, TrendingDown, ShieldCheck, LineChart, History } from "lucide-react";
+import { CascataWordmark } from "@/components/brand/CascataWordmark";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
@@ -62,8 +63,8 @@ function AuthLayout() {
   return (
     <div className="min-h-screen flex">
       <aside className="w-64 border-r border-border bg-card flex flex-col">
-        <Link to="/" className="p-6 border-b border-border">
-          <span className="font-display text-2xl text-primary">Cascata</span>
+        <Link to="/" className="p-6 border-b border-border flex flex-col gap-1" aria-label="Cascata — início">
+          <CascataWordmark height={28} />
           <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="eyebrow mt-1">por J P Saraiva</a>
         </Link>
         <nav className="flex-1 p-4 space-y-1">
