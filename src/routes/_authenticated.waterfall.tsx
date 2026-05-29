@@ -40,6 +40,10 @@ function WaterfallPage() {
   const [filterAccount, setFilterAccount] = useState<string>("");
   const [filterCustomer, setFilterCustomer] = useState<string>("");
   const [multipliers, setMultipliers] = useState<Record<string, number>>({ "6": 1, "7": 1, "8": 1 });
+  const [referenceMonth, setReferenceMonth] = useState<string>(() => {
+    const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const referenceDate = `${referenceMonth}-01`;
   const callWaterfall = useServerFn(getWaterfall);
 
   useEffect(() => {
