@@ -571,6 +571,91 @@ function CompareView({
   );
 }
 
+function SensitivityPanel({
+  mainLines, baseTotals, multipliers, setMultipliers, isAdjusted, pocketDelta,
+}: {
+  mainLines: Line[];
+  baseTotals: Map<string, number>;
+  multipliers: Record<string, number>;
+  setMultipliers: (m: Record<string, number>) => void;
+  isAdjusted: boolean;
+  pocketDelta: number;
+}) {
+  const targets = ["6", "7", "8"]
+    .map(code => mainLines.find(l => l.code === code))
+    .filter((l): l is Line => !!l);
+
+  const setMult = (code: string, mult: number) => {
+    setMultipliers({ ...multipliers, [code]: mult });
+  };
+  const reset = () => setMultipliers({ "6": 1, "7": 1, "8": 1 });
+  const compact = (n: number) =>
+    new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+  const brl = (n: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(n);
+
+  return (
+    <div className="bg-card border border-border">
+      <div className="px-8 py-5 border-b border-border flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <p className="eyebrow">ANÁLISE DE SENSIBILIDADE</p>
+          <h2 className="font-display text-xl text-primary mt-1">Simule mudanças nas deduções</h2>
+        </div>
+        <div className="flex items-center gap-4">
+          {isAdjusted && (
+            <div className="text-right">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Δ Pocket Margin</p>
+              <p className={`font-display text-lg ${pocketDelta >= 0 ? "text-[hsl(var(--cascata-inflow))]" : "text-[hsl(var(--cascata-outflow))]"}`}>
+                {pocketDelta >= 0 ? "+" : ""}{brl(pocketDelta)}
+              </p>
+            </div>
+          )}
+          <button onClick={reset} disabled={!isAdjusted}
+            className="border border-border px-4 py-2 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed">
+            Resetar
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
+        {targets.map(l => {
+          const base = baseTotals.get(l.code) || 0;
+          const mult = multipliers[l.code] ?? 1;
+          const adjusted = base * mult;
+          const pctChange = (mult - 1) * 100;
+          return (
+            <div key={l.code} className="bg-card p-6 space-y-3">
+              <div className="flex items-baseline justify-between">
+                <p className="text-xs font-mono text-muted-foreground">#{l.code}</p>
+                <span className={`text-xs font-mono font-semibold ${pctChange === 0 ? "text-muted-foreground" : pctChange < 0 ? "text-[hsl(var(--cascata-inflow))]" : "text-[hsl(var(--cascata-outflow))]"}`}>
+                  {pctChange > 0 ? "+" : ""}{pctChange.toFixed(0)}%
+                </span>
+              </div>
+              <p className="font-display text-sm text-primary leading-tight">{l.label}</p>
+              <input
+                type="range" min={-50} max={50} step={1}
+                value={Math.round(pctChange)}
+                onChange={(e) => setMult(l.code, 1 + Number(e.target.value) / 100)}
+                className="w-full accent-[hsl(var(--cascata-gold))]"
+              />
+              <div className="flex items-baseline justify-between text-xs">
+                <span className="text-muted-foreground">Base</span>
+                <span className="font-mono">{compact(base)}</span>
+              </div>
+              <div className="flex items-baseline justify-between text-xs">
+                <span className="text-muted-foreground">Simulado</span>
+                <span className={`font-mono font-semibold ${mult !== 1 ? "text-[var(--gold)]" : ""}`}>{compact(adjusted)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="px-8 py-3 text-xs text-muted-foreground border-t border-border">
+        Mova os sliders para ver impacto em tempo real no waterfall e nos KPIs acima. Variação de −50% a +50% sobre o valor atual da linha.
+      </p>
+    </div>
+  );
+}
+
 function fmt(n: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(n);
 }
