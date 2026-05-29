@@ -133,13 +133,23 @@ function WaterfallPage() {
   const activeTotals = mode === "B2C" ? totalsB2C : totalsB2B;
   const activeSub = mode === "B2C" ? subTotalsB2C : subTotalsB2B;
 
+  // Apply sensitivity multipliers to deduction lines (6, 7, 8)
+  const adjustedTotals = useMemo(() => {
+    const m = new Map(activeTotals);
+    for (const code of ["6", "7", "8"]) {
+      const mult = multipliers[code] ?? 1;
+      if (mult !== 1) m.set(code, (activeTotals.get(code) || 0) * mult);
+    }
+    return m;
+  }, [activeTotals, multipliers]);
+
   const mainLines = useMemo(() => lines.filter(l => l.kind === "main").sort((a,b) => (a.main_no||0)-(b.main_no||0)), [lines]);
   const subLines = useMemo(() => lines.filter(l => l.kind === "sub").sort((a,b) => (a.sub_no||0)-(b.sub_no||0)), [lines]);
 
   const waterfallData = useMemo(() => {
     let running = 0;
     return mainLines.map((l, idx) => {
-      const raw = activeTotals.get(l.code) || 0;
+      const raw = adjustedTotals.get(l.code) || 0;
       const delta = l.bucket === "revenue" ? raw : -raw;
       const base = delta >= 0 ? running : running + delta;
       const bar = Math.abs(delta);
@@ -147,7 +157,7 @@ function WaterfallPage() {
       running += delta;
       return { idx, code: l.code, name: `#${l.code}`, label: l.label || "", bucket: l.bucket, base, bar, delta, running, prevRunning: prev };
     });
-  }, [mainLines, activeTotals]);
+  }, [mainLines, adjustedTotals]);
 
   const kpisFor = (totals: Map<string, number>) => {
     const sum = (codes: string[]) => codes.reduce((s, c) => s + (totals.get(c) || 0), 0);
@@ -160,9 +170,11 @@ function WaterfallPage() {
     const pocket = grossMargin - opex;
     return { grossRevenue, deductions, netRevenue, grossMargin, pocket };
   };
-  const kpis = useMemo(() => kpisFor(activeTotals), [activeTotals]);
+  const baselineKpis = useMemo(() => kpisFor(activeTotals), [activeTotals]);
+  const kpis = useMemo(() => kpisFor(adjustedTotals), [adjustedTotals]);
   const kpisB2B = useMemo(() => kpisFor(totalsB2B), [totalsB2B]);
   const kpisB2C = useMemo(() => kpisFor(totalsB2C), [totalsB2C]);
+  const isAdjusted = useMemo(() => Object.values(multipliers).some(v => v !== 1), [multipliers]);
 
   const subData = useMemo(() => subLines.map(l => ({
     code: l.code, name: l.code, label: l.label || "",
