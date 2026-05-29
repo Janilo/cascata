@@ -104,10 +104,13 @@ function InputsPage() {
   const saveValue = async (line_code: string, customer_id: string, value: number | null, priority: string) => {
     setBusy(`${line_code}:${customer_id}`);
     const { error } = await supabase.from("line_inputs").upsert({
-      line_code, customer_id, bu, department: dept, value, priority,
-    }, { onConflict: "line_code,customer_id,bu" });
+      line_code, customer_id, bu, department: dept, value, priority, reference_date: referenceDate,
+    }, { onConflict: "line_code,customer_id,bu,reference_date" });
     if (!error) {
-      const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department,ai_extraction");
+      const { data: ins } = await supabase
+        .from("line_inputs")
+        .select("line_code,customer_id,value,priority,department,ai_extraction")
+        .eq("reference_date", referenceDate);
       setInputs(ins || []);
     }
     setBusy(null);
