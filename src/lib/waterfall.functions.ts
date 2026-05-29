@@ -13,6 +13,7 @@ const Input = z.object({
   leader: z.string().optional(),
   account: z.string().optional(),
   customerId: z.string().optional(),
+  referenceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 const PRIORITY_ORDER = ["P1", "P2", "P3", "MANUAL", "RATEIO"] as const;
 
