@@ -33,6 +33,10 @@ function InputsPage() {
   const [inputs, setInputs] = useState<Array<{ line_code: string; customer_id: string; value: number | null; priority: string; department: string; ai_extraction: any }>>([]);
   const [bu, setBu] = useState<"B2B"|"B2C">("B2B");
   const [busy, setBusy] = useState<string | null>(null);
+  const [referenceMonth, setReferenceMonth] = useState<string>(() => {
+    const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const referenceDate = `${referenceMonth}-01`;
 
   useEffect(() => {
     (async () => {
@@ -44,10 +48,18 @@ function InputsPage() {
       setLines((ls as Line[]) || []);
       const { data: cs } = await supabase.from("customers").select("id,customer_name,bu").order("customer_name");
       setCustomers((cs as Customer[]) || []);
-      const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department,ai_extraction");
-      setInputs(ins || []);
     })();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      const { data: ins } = await supabase
+        .from("line_inputs")
+        .select("line_code,customer_id,value,priority,department,ai_extraction")
+        .eq("reference_date", referenceDate);
+      setInputs(ins || []);
+    })();
+  }, [referenceDate]);
 
   const myMainLines = useMemo(() => lines.filter(l => l.kind === "main" && l.department === dept), [lines, dept]);
   const subsByMain = useMemo(() => {
