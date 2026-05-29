@@ -63,11 +63,6 @@ const AuthenticatedWaterfallRoute = AuthenticatedWaterfallRouteImport.update({
   path: '/waterfall',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedComparativoRoute = AuthenticatedComparativoRouteImport.update({
-  id: '/comparativo',
-  path: '/comparativo',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedOrganogramaRoute =
   AuthenticatedOrganogramaRouteImport.update({
     id: '/organograma',
