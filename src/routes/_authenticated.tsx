@@ -48,6 +48,7 @@ function AuthLayout() {
 
   const navItems = [
     { to: "/waterfall", label: "Waterfall", icon: BarChart3 },
+    { to: "/comparativo", label: "Comparativo", icon: LineChart },
     { to: "/inputs", label: "Inputs", icon: Upload },
     { to: "/custo-de-servir", label: "Custo de servir", icon: TrendingDown },
     { to: "/organograma", label: "Organograma", icon: Network },
