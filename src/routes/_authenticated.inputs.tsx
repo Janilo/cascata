@@ -279,12 +279,15 @@ function InputsPage() {
                                       </select>
                                     </td>
                                     <td className="px-2 py-1.5 text-right w-48">
-                                      <input type="number" defaultValue={row?.value ?? ""} placeholder="0"
-                                        className="w-full bg-transparent border-b border-border focus:border-primary focus:outline-none py-1 text-right font-mono"
-                                        onBlur={(e) => {
-                                          const v = e.target.value === "" ? null : Number(e.target.value);
-                                          saveValue(s.code, c.id, v, row?.priority || "P1");
-                                        }} />
+                                      <div className="flex items-center justify-end gap-2">
+                                        <ConfidenceBadge ext={row?.ai_extraction} />
+                                        <input type="number" defaultValue={row?.value ?? ""} placeholder="0"
+                                          className="w-32 bg-transparent border-b border-border focus:border-primary focus:outline-none py-1 text-right font-mono"
+                                          onBlur={(e) => {
+                                            const v = e.target.value === "" ? null : Number(e.target.value);
+                                            saveValue(s.code, c.id, v, row?.priority || "P1");
+                                          }} />
+                                      </div>
                                     </td>
                                   </tr>
                                 );
