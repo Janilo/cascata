@@ -227,7 +227,7 @@ function ComparativoPage() {
               <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
               <YAxis tickFormatter={compact} stroke="hsl(var(--muted-foreground))" fontSize={12} />
               <Tooltip
-                formatter={(value: number) => brl(value)}
+                formatter={(value) => brl(Number(value))}
                 contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
               />
               <Bar dataKey="Receita Líquida" fill="hsl(var(--primary))" />
