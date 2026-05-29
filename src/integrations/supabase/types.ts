@@ -227,6 +227,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_approved: boolean
+          is_guest: boolean
         }
         Insert: {
           created_at?: string
@@ -234,6 +235,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_approved?: boolean
+          is_guest?: boolean
         }
         Update: {
           created_at?: string
@@ -241,6 +243,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_approved?: boolean
+          is_guest?: boolean
         }
         Relationships: []
       }
@@ -321,6 +324,7 @@ export type Database = {
         Returns: boolean
       }
       is_approved: { Args: { _user_id: string }; Returns: boolean }
+      is_guest: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "member"
