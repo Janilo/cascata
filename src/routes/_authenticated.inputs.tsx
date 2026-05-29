@@ -8,7 +8,7 @@ export const Route = createFileRoute("/_authenticated/inputs")({
   component: InputsPage,
 });
 
-type Line = { code: string; label: string | null; department: string | null; p1_desc: string | null; p2_desc: string | null; p3_desc: string | null; kind: string };
+type Line = { code: string; label: string | null; department: string | null; p1_desc: string | null; p2_desc: string | null; p3_desc: string | null; kind: string; main_no: number | null; sub_no: number | null };
 type Customer = { id: string; customer_name: string; bu: string };
 
 const DEPT_COLORS: Record<string, string> = {
