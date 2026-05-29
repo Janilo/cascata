@@ -303,6 +303,11 @@ function WaterfallPage() {
 
       <div className="bg-card border border-border p-4 flex flex-wrap items-end gap-4">
         <div className="flex flex-col gap-1">
+          <span className="eyebrow text-[10px]">Período</span>
+          <input type="month" value={referenceMonth} onChange={(e) => setReferenceMonth(e.target.value)}
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[160px] font-mono" />
+        </div>
+        <div className="flex flex-col gap-1">
           <span className="eyebrow text-[10px]">Departamento</span>
           <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)}
             className="border border-border bg-transparent px-3 py-2 text-xs min-w-[160px]">
