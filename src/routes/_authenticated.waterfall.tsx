@@ -6,8 +6,8 @@ import {
   Bar, BarChart, CartesianGrid, Cell, ComposedChart, LabelList, Line,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { ChevronDown, ChevronUp, Upload, FileSpreadsheet, FileText } from "lucide-react";
-import { getWaterfall } from "@/lib/waterfall.functions";
+import { ChevronDown, ChevronUp, Upload, FileSpreadsheet, FileText, Share2, Copy, Check } from "lucide-react";
+import { getWaterfall, createSharedLink } from "@/lib/waterfall.functions";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -45,6 +45,13 @@ function WaterfallPage() {
   });
   const referenceDate = `${referenceMonth}-01`;
   const callWaterfall = useServerFn(getWaterfall);
+  const callCreateShare = useServerFn(createSharedLink);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareLabel, setShareLabel] = useState("");
+  const [shareDays, setShareDays] = useState(14);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -295,6 +302,13 @@ function WaterfallPage() {
           <button onClick={exportPDF} className="inline-flex items-center gap-2 border border-border px-4 py-3 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary">
             <FileText className="w-4 h-4" /> PDF
           </button>
+          <button
+            onClick={() => { setShareOpen(true); setShareUrl(null); setShareCopied(false); }}
+            disabled={mode === "COMPARE"}
+            title={mode === "COMPARE" ? "Selecione B2B ou B2C para compartilhar" : "Gerar link read-only"}
+            className="inline-flex items-center gap-2 border border-border px-4 py-3 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed">
+            <Share2 className="w-4 h-4" /> Compartilhar
+          </button>
           <Link to="/inputs" className="inline-flex items-center gap-2 bg-[var(--gold)] text-ink px-4 py-3 text-xs uppercase tracking-[0.18em] font-semibold">
             <Upload className="w-4 h-4" /> Inputs
           </Link>
@@ -481,6 +495,79 @@ function WaterfallPage() {
         </>
       ) : (
         <CompareView mainLines={mainLines} totalsB2B={totalsB2B} totalsB2C={totalsB2C} kpisB2B={kpisB2B} kpisB2C={kpisB2C} />
+      )}
+
+      {shareOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-6" onClick={() => setShareOpen(false)}>
+          <div className="bg-card border border-border max-w-lg w-full p-8 space-y-5" onClick={(e) => e.stopPropagation()}>
+            <div>
+              <p className="eyebrow">Link de visualização</p>
+              <h2 className="font-display text-2xl text-primary mt-2">Compartilhar waterfall {mode}</h2>
+              <p className="text-xs text-muted-foreground mt-2">
+                URL pública, read-only, sem login. Reflete a BU {mode}{referenceMonth ? ` no período ${referenceMonth}` : ""}.
+              </p>
+            </div>
+
+            {!shareUrl ? (
+              <>
+                <div className="space-y-3">
+                  <div>
+                    <label className="eyebrow text-[10px] block mb-1">Rótulo (opcional)</label>
+                    <input value={shareLabel} onChange={(e) => setShareLabel(e.target.value)} placeholder="Ex: Reunião Cliente X"
+                      className="w-full border border-border bg-transparent px-3 py-2 text-sm" maxLength={120} />
+                  </div>
+                  <div>
+                    <label className="eyebrow text-[10px] block mb-1">Expira em</label>
+                    <select value={shareDays} onChange={(e) => setShareDays(Number(e.target.value))}
+                      className="w-full border border-border bg-transparent px-3 py-2 text-sm">
+                      <option value={1}>1 dia</option>
+                      <option value={7}>7 dias</option>
+                      <option value={14}>14 dias</option>
+                      <option value={30}>30 dias</option>
+                      <option value={90}>90 dias</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <button onClick={() => setShareOpen(false)}
+                    className="border border-border px-4 py-2 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary">Cancelar</button>
+                  <button disabled={shareBusy || mode === "COMPARE"}
+                    onClick={async () => {
+                      setShareBusy(true);
+                      try {
+                        const row = await callCreateShare({ data: {
+                          bu: mode as "B2B" | "B2C",
+                          referenceDate,
+                          label: shareLabel || undefined,
+                          expiresInDays: shareDays,
+                        } });
+                        setShareUrl(`${window.location.origin}/share/${row.token}`);
+                      } catch (e) { alert(e instanceof Error ? e.message : "Erro"); }
+                      setShareBusy(false);
+                    }}
+                    className="bg-primary text-primary-foreground px-4 py-2 text-xs uppercase tracking-[0.18em] font-semibold disabled:opacity-40">
+                    {shareBusy ? "Gerando…" : "Gerar link"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border border-border p-3 bg-background">
+                  <code className="flex-1 text-xs font-mono truncate">{shareUrl}</code>
+                  <button onClick={() => { navigator.clipboard.writeText(shareUrl); setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); }}
+                    className="inline-flex items-center gap-1 border border-border px-3 py-2 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary shrink-0">
+                    {shareCopied ? <><Check className="w-3 h-3" /> Copiado</> : <><Copy className="w-3 h-3" /> Copiar</>}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">Qualquer pessoa com este link verá o waterfall até a data de expiração. Nenhuma edição é possível.</p>
+                <div className="flex justify-end pt-2">
+                  <button onClick={() => setShareOpen(false)}
+                    className="bg-primary text-primary-foreground px-4 py-2 text-xs uppercase tracking-[0.18em] font-semibold">Fechar</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
