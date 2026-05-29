@@ -6,6 +6,19 @@ import { lovable } from "@/integrations/lovable/index";
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({ redirect: (s.redirect as string) || "/waterfall" }),
   component: LoginPage,
+  head: () => ({
+    meta: [
+      { title: "Entrar — Cascata" },
+      { name: "description", content: "Acesse sua conta Cascata para abrir o price waterfall por cliente, com drill-down de descontos comerciais e separação por BU." },
+      { property: "og:title", content: "Entrar — Cascata" },
+      { property: "og:description", content: "Acesse sua conta Cascata para abrir o price waterfall por cliente." },
+      { property: "og:url", content: "https://cascata.pereirasaraiva.com/login" },
+      { name: "robots", content: "noindex,follow" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://cascata.pereirasaraiva.com/login" },
+    ],
+  }),
 });
 
 function LoginPage() {
