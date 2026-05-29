@@ -158,11 +158,18 @@ function InputsPage() {
         <p className="text-sm text-muted-foreground mt-2">Você vê e edita apenas as linhas do seu departamento. Outros departamentos veem totais agregados.</p>
       </div>
 
-      <div className="inline-flex border border-border">
-        {(["B2B","B2C"] as const).map(b => (
-          <button key={b} onClick={() => setBu(b)}
-            className={`px-6 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${bu===b ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>{b}</button>
-        ))}
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="inline-flex border border-border">
+          {(["B2B","B2C"] as const).map(b => (
+            <button key={b} onClick={() => setBu(b)}
+              className={`px-6 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${bu===b ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>{b}</button>
+          ))}
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="eyebrow text-[10px]">Período de referência</span>
+          <input type="month" value={referenceMonth} onChange={(e) => setReferenceMonth(e.target.value)}
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[160px] font-mono" />
+        </div>
       </div>
 
       {/* Progress: dept */}
