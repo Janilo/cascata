@@ -156,7 +156,7 @@ function AdminPage() {
                     </button>
                   ) : (
                     <button onClick={() => setApproved(r.id, true)}
-                      className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.12em] text-emerald-700 hover:opacity-80">
+                      className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.12em] delta-up hover:opacity-80">
                       <Check className="w-3.5 h-3.5" /> Aprovar
                     </button>
                   )}
@@ -288,7 +288,7 @@ function AdminPage() {
                   <td className="px-6 py-2 text-xs">{a.department || "—"}</td>
                   <td className="px-6 py-2 text-right font-mono text-xs">{fmt(a.old_value)}</td>
                   <td className="px-6 py-2 text-right font-mono text-xs">{fmt(a.new_value)}</td>
-                  <td className={`px-6 py-2 text-right font-mono text-xs ${delta > 0 ? "text-emerald-600" : delta < 0 ? "text-destructive" : "text-muted-foreground"}`}>{delta === 0 ? "—" : fmt(delta)}</td>
+                  <td className={`px-6 py-2 text-right tabular text-xs ${delta > 0 ? "delta-up" : delta < 0 ? "delta-down" : "delta-zero"}`}>{delta === 0 ? "—" : fmt(delta)}</td>
                 </tr>
               );
             })}

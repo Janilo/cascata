@@ -172,7 +172,7 @@
 
   --border: var(--cascata-stone);
   --input:  var(--cascata-stone);
-  --ring:   var(--cascata-navy);
+  --ring:   var(--cascata-gold);
 
   /* Aliases legados (Tailwind utilities `bg-marine`, `bg-gold`, etc.) */
   --ink:         var(--cascata-ink);
@@ -209,26 +209,6 @@
   /* Shadows — tom marinho */
   --shadow-card:  0 1px 0 rgba(6, 25, 43, 0.03), 0 2px 8px rgba(6, 25, 43, 0.07);
   --shadow-hover: 0 1px 0 rgba(6, 25, 43, 0.04), 0 8px 24px rgba(16, 60, 97, 0.12);
-}
-
-.dark {
-  --background: var(--cascata-abyss);
-  --foreground: var(--cascata-paper);
-  --card: var(--cascata-navy-deep);
-  --card-foreground: var(--cascata-paper);
-  --popover: var(--cascata-navy-deep);
-  --popover-foreground: var(--cascata-paper);
-  --primary: var(--cascata-gold);
-  --primary-foreground: var(--cascata-abyss);
-  --secondary: var(--cascata-navy-deep);
-  --secondary-foreground: var(--cascata-paper);
-  --muted: var(--cascata-navy-deep);
-  --muted-foreground: #9FB1C2;
-  --accent: var(--cascata-gold);
-  --accent-foreground: var(--cascata-abyss);
-  --border: rgba(255,255,255,0.10);
-  --input: rgba(255,255,255,0.15);
-  --ring: var(--cascata-gold);
 }
 
 @layer base {
@@ -283,3 +263,42 @@
 .pill-outflow  { background: var(--cascata-outflow-soft); color: var(--cascata-outflow); }
 .pill-margin   { background: var(--cascata-gold-soft);    color: var(--cascata-gold-ink); }
 .pill-navy     { background: var(--cascata-navy-soft);    color: var(--cascata-navy-ink); }
+
+/* Deltas financeiros — usar em colunas Δ, badges de variação */
+.delta-up      { color: var(--cascata-inflow); }
+.delta-down    { color: var(--cascata-outflow); }
+.delta-zero    { color: var(--cascata-mute); }
+
+/* Linhas semânticas de tabela financeira (handoff DS v0.1) */
+tr.row-subtotal > td {
+  background: var(--cascata-navy-soft);
+  color: var(--cascata-navy-ink);
+  font-weight: 600;
+}
+tr.row-total > td {
+  background: var(--cascata-navy);
+  color: var(--cascata-white);
+  font-weight: 600;
+}
+
+/* Cabeçalho de tabela padrão Cascata */
+.th-cascata {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cascata-mute);
+  background: var(--cascata-paper);
+}
+
+/* KPI com faixa mostarda (dinheiro) */
+.kpi-accent-money {
+  position: relative;
+}
+.kpi-accent-money::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--cascata-gold);
+}
