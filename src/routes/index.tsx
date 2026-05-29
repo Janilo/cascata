@@ -65,17 +65,30 @@ function LandingPage() {
           <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mb-12">
             Cada departamento alimenta as linhas que conhece. A IA lê os arquivos enviados, identifica os campos por cliente, e o price waterfall se monta — com drill-down nos 33 tipos de desconto comercial e separação por BU.
           </p>
-          <div className="flex items-center gap-8">
+          <div className="flex flex-wrap items-center gap-8">
             <Link
               to="/signup"
               className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-8 py-4 text-sm font-semibold"
             >
               Criar conta
             </Link>
+            <button
+              type="button"
+              onClick={enterAsGuest}
+              disabled={loadingGuest}
+              className="inline-flex items-center gap-2 border border-primary text-primary px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50"
+            >
+              <Eye className="w-4 h-4" />
+              {loadingGuest ? "Entrando…" : "Entrar como convidado"}
+            </button>
             <Link to="/login" className="text-sm text-foreground underline underline-offset-4 hover:text-primary">
               Entrar
             </Link>
           </div>
+          <p className="text-xs text-muted-foreground mt-4 uppercase tracking-[0.14em]">
+            Modo demonstração · 5 clientes fictícios · somente leitura
+          </p>
+
         </div>
       </section>
 
