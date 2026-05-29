@@ -361,6 +361,7 @@ export type Database = {
       }
       is_approved: { Args: { _user_id: string }; Returns: boolean }
       is_guest: { Args: { _user_id: string }; Returns: boolean }
+      line_owner_department: { Args: { _line_code: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "member"
