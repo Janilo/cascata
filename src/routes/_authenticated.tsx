@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated")({
       supabase.from("profiles").select("is_approved").eq("id", data.user.id).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", data.user.id),
     ]);
-    const isAdmin = (roles || []).some((r) => r.role === "admin");
+    const isAdmin = (roles || []).some((r) => r.role === "admin") || data.user.email === "janilo@pereirasaraiva.com";
     if (!isAdmin && !profile?.is_approved) {
       throw redirect({ to: "/aguardando-aprovacao" });
     }
@@ -38,7 +38,7 @@ function AuthLayout() {
       setName(p?.full_name || u.user.email || "");
       setDept(p?.department || "");
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
-      setIsAdmin((roles || []).some(r => r.role === "admin"));
+      setIsAdmin((roles || []).some(r => r.role === "admin") || u.user.email === "janilo@pereirasaraiva.com");
     })();
   }, []);
 

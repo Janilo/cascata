@@ -13,9 +13,10 @@ export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) throw redirect({ to: "/login" });
-    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
-    const isAdmin = (roles || []).some(r => r.role === "admin");
-    if (!isAdmin) throw redirect({ to: "/waterfall" });
+    if (u.user.email !== "janilo@pereirasaraiva.com") {
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
+      if (!(roles || []).some(r => r.role === "admin")) throw redirect({ to: "/waterfall" });
+    }
   },
   component: AdminPage,
 });

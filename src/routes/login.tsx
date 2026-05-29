@@ -69,6 +69,9 @@ function LoginPage() {
             <Field label="Email" type="email" value={email} onChange={setEmail} required />
             <Field label="Senha" type="password" value={password} onChange={setPassword} required />
           </div>
+          <div className="flex justify-end mt-2">
+            <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-primary">Esqueci a senha</Link>
+          </div>
           {err && <p className="text-xs text-destructive mt-4">{err}</p>}
           <button type="submit" disabled={loading} className="mt-8 w-full bg-primary text-primary-foreground py-4 text-sm font-semibold uppercase tracking-[0.18em] disabled:opacity-60">
             {loading ? "Entrando…" : "Entrar"}
