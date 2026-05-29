@@ -84,6 +84,7 @@ function WaterfallPage() {
   const callCreateShare = useServerFn(createSharedLink);
   const [viewMode, setViewMode] = useState<"aggregate" | "detail">("aggregate");
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [expandedSubCat, setExpandedSubCat] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareLabel, setShareLabel] = useState("");
@@ -128,17 +129,9 @@ function WaterfallPage() {
       for (const b of need) {
         const wf = await callWaterfall({ data: { bu: b.code, ...filterArgs } });
         totalsNext.set(b.code, new Map(Object.entries(wf.totalsByCode)));
-        // Populate waterfall line definitions from the first server response (bypasses RLS)
+        // Lines and sub-totals come from the server (bypasses RLS for guest users)
         if (wf.lines && wf.lines.length > 0) setLines(wf.lines as Line[]);
-        let q = supabase.from("line_inputs").select("line_code,value,customer_id,department").eq("bu", b.code).eq("reference_date", referenceDate);
-        if (filterArgs.department) q = q.eq("department", filterArgs.department);
-        const { data: subs } = await q;
-        const m = new Map<string, number>();
-        for (const r of subs || []) {
-          if (anyCustFilter && !allowed.has(r.customer_id)) continue;
-          if (r.line_code.startsWith("7.")) m.set(r.line_code, (m.get(r.line_code) || 0) + Number(r.value || 0));
-        }
-        subNext.set(b.code, m);
+        subNext.set(b.code, new Map(Object.entries(wf.subTotalsByCode || {})));
       }
       setTotalsByBu(totalsNext);
       setSubTotalsByBu(subNext);
@@ -241,9 +234,23 @@ function WaterfallPage() {
 
   const subData = useMemo(() => subLines.map(l => ({
     code: l.code, name: l.code, label: l.label || "",
-    value: activeSub.get(l.code) || 0,
-    category: (l.category || "").replace("  └ ", ""),
+    value: Math.abs(activeSub.get(l.code) || 0),
+    category: (l.category || "Outros").replace(/^\s*└\s*/, "").trim(),
   })), [subLines, activeSub]);
+
+  // Sub-lines grouped by category (column B in the Excel template)
+  const subCatData = useMemo(() => {
+    const map = new Map<string, { lines: typeof subData; total: number }>();
+    for (const d of subData) {
+      const entry = map.get(d.category) || { lines: [], total: 0 };
+      entry.lines.push(d);
+      entry.total += d.value;
+      map.set(d.category, entry);
+    }
+    return Array.from(map.entries())
+      .map(([cat, { lines, total }]) => ({ cat, lines, total }))
+      .sort((a, b) => b.total - a.total);
+  }, [subData]);
 
   const colorFor = (bucket: string) =>
     bucket === "revenue" ? "var(--marine)" :
@@ -578,22 +585,70 @@ function WaterfallPage() {
 
           {showSub && (
             <div className="bg-card border border-border">
-              <div className="px-8 py-5 border-b border-border">
+              <div className="px-8 py-5 border-b border-border flex items-center justify-between flex-wrap gap-3">
                 <h2 className="font-display text-xl text-primary">Drill-down · Linha #7 — 33 tipos de desconto comercial</h2>
+                {expandedSubCat && (
+                  <button onClick={() => setExpandedSubCat(null)}
+                    className="text-xs text-muted-foreground hover:text-foreground uppercase tracking-[0.14em]">
+                    Ver todas as categorias ×
+                  </button>
+                )}
               </div>
-              <div className="h-[420px] p-6">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={subData} margin={{ top: 20, right: 30, left: 30, bottom: 50 }}>
+              <div className="overflow-x-auto">
+                <div style={{ minWidth: Math.max(600, subCatData.length * 120) }}>
+                  <BarChart width={Math.max(600, subCatData.length * 120)} height={340}
+                    data={subCatData} margin={{ top: 20, right: 30, left: 30, bottom: 90 }}>
                     <CartesianGrid stroke="var(--stone)" strokeDasharray="2 4" vertical={false} />
-                    <XAxis dataKey="name" stroke="var(--soft)" tick={{ fontSize: 10 }} interval={0} angle={-45} textAnchor="end" height={60} />
+                    <XAxis dataKey="cat" stroke="var(--soft)" tick={{ fontSize: 10 }} interval={0} angle={-40} textAnchor="end" height={100} />
                     <YAxis stroke="var(--soft)" tick={{ fontSize: 11 }} tickFormatter={(v: number) => fmtShort(v)} />
                     <Tooltip
                       contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 0, fontSize: 12 }}
-                      formatter={(value: unknown, _n: unknown, props: { payload?: { label?: string; category?: string } }) => [fmt(Number(value)), `${props.payload?.category} · ${props.payload?.label}`]}
+                      formatter={(value: unknown, _n: unknown, props: { payload?: { cat?: string } }) => [fmt(Number(value)), props.payload?.cat || ""]}
                     />
-                    <Bar dataKey="value" fill="var(--primary)" isAnimationActive={false} />
+                    <Bar dataKey="total" isAnimationActive={false}>
+                      {subCatData.map((d) => (
+                        <Cell key={d.cat}
+                          fill={expandedSubCat === d.cat ? "var(--marine)" : "var(--primary)"}
+                          onClick={() => setExpandedSubCat(c => c === d.cat ? null : d.cat)}
+                          style={{ cursor: "pointer", opacity: expandedSubCat && expandedSubCat !== d.cat ? 0.45 : 1 }} />
+                      ))}
+                      <LabelList dataKey="total" position="top"
+                        formatter={(v: unknown) => fmtShort(Number(v))}
+                        style={{ fontSize: 10, fill: "var(--ink)" }} />
+                    </Bar>
                   </BarChart>
-                </ResponsiveContainer>
+                </div>
+              </div>
+              {expandedSubCat && (() => {
+                const group = subCatData.find(d => d.cat === expandedSubCat);
+                if (!group) return null;
+                return (
+                  <div className="border-t border-border bg-secondary/20">
+                    <div className="px-8 py-3 flex items-center justify-between border-b border-border">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">{expandedSubCat} — sublinhas</p>
+                      <button onClick={() => setExpandedSubCat(null)}
+                        className="text-xs text-muted-foreground hover:text-foreground uppercase tracking-[0.14em]">Fechar ×</button>
+                    </div>
+                    <table className="w-full text-sm">
+                      <tbody>
+                        {[...group.lines].sort((a, b) => b.value - a.value).map(l => (
+                          <tr key={l.code} className="border-t border-border/60">
+                            <td className="px-8 py-2 font-mono text-xs text-muted-foreground w-16">#{l.code}</td>
+                            <td className="px-3 py-2">{l.label}</td>
+                            <td className="px-8 py-2 text-right font-mono">{fmt(l.value)}</td>
+                          </tr>
+                        ))}
+                        <tr className="border-t border-border bg-secondary/30">
+                          <td className="px-8 py-2 font-mono text-xs font-semibold" colSpan={2}>Total {expandedSubCat}</td>
+                          <td className="px-8 py-2 text-right font-mono font-semibold">{fmt(group.total)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+              <div className="px-8 py-3 border-t border-border text-xs text-muted-foreground bg-secondary/40">
+                {subCatData.length} categorias · {subData.length} sublinhas · Clique numa barra para expandir as sublinhas da categoria
               </div>
             </div>
           )}
