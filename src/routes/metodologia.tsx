@@ -21,7 +21,7 @@ function MetodologiaPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="px-12 py-8 flex items-center justify-between border-b border-border">
+      <header className="sticky top-0 z-40 px-12 py-5 flex items-center justify-between border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
         <Link to="/" className="flex items-baseline gap-3">
           <span className="font-display text-3xl text-primary" style={{ fontVariationSettings: '"opsz" 144' }}>
             Cascata
