@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart3, Upload, Network, Users, LogOut, TrendingDown, ShieldCheck, LineChart } from "lucide-react";
+import { BarChart3, Upload, Network, Users, LogOut, TrendingDown, ShieldCheck, LineChart, History } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
@@ -53,7 +53,10 @@ function AuthLayout() {
     { to: "/custo-de-servir", label: "Custo de servir", icon: TrendingDown },
     { to: "/organograma", label: "Organograma", icon: Network },
     { to: "/clientes", label: "Clientes", icon: Users },
-    ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
+    ...(isAdmin ? [
+      { to: "/auditoria", label: "Auditoria", icon: History },
+      { to: "/admin", label: "Admin", icon: ShieldCheck },
+    ] : []),
   ];
 
   return (
