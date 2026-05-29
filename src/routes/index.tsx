@@ -66,10 +66,8 @@ function LandingPage() {
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="px-12 py-8 flex items-center justify-between border-b border-border">
-        <Link to="/" className="flex items-baseline gap-3">
-          <span className="font-display text-3xl text-primary" style={{ fontVariationSettings: '"opsz" 144' }}>
-            Cascata
-          </span>
+        <Link to="/" className="flex items-center gap-3" aria-label="Cascata — início">
+          <CascataWordmark height={30} />
           <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="eyebrow">por J P Saraiva</a>
         </Link>
         <nav className="flex items-center gap-8 text-sm">
