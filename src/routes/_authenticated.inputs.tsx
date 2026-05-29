@@ -30,7 +30,7 @@ function InputsPage() {
   const [dept, setDept] = useState<string>("");
   const [lines, setLines] = useState<Line[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [inputs, setInputs] = useState<Array<{ line_code: string; customer_id: string; value: number | null; priority: string; department: string; ai_extraction: { confidence?: number } | null }>>([]);
+  const [inputs, setInputs] = useState<Array<{ line_code: string; customer_id: string; value: number | null; priority: string; department: string; ai_extraction: any }>>([]);
   const [bu, setBu] = useState<"B2B"|"B2C">("B2B");
   const [busy, setBusy] = useState<string | null>(null);
 
