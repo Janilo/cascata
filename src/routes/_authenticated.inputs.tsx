@@ -3,12 +3,13 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, Loader2 } from "lucide-react";
 import { fileToText } from "@/lib/file-parse";
+import { useBusinessUnits } from "@/hooks/use-business-units";
 
 export const Route = createFileRoute("/_authenticated/inputs")({
   component: InputsPage,
 });
 
-type Line = { code: string; label: string | null; department: string | null; p1_desc: string | null; p2_desc: string | null; p3_desc: string | null; kind: string };
+type Line = { code: string; label: string | null; department: string | null; p1_desc: string | null; p2_desc: string | null; p3_desc: string | null; kind: string; main_no: number | null; sub_no: number | null };
 type Customer = { id: string; customer_name: string; bu: string };
 
 const DEPT_COLORS: Record<string, string> = {
@@ -30,9 +31,15 @@ function InputsPage() {
   const [dept, setDept] = useState<string>("");
   const [lines, setLines] = useState<Line[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [inputs, setInputs] = useState<Array<{ line_code: string; customer_id: string; value: number | null; priority: string; department: string }>>([]);
-  const [bu, setBu] = useState<"B2B"|"B2C">("B2B");
+  const [inputs, setInputs] = useState<Array<{ line_code: string; customer_id: string; value: number | null; priority: string; department: string; ai_extraction: any }>>([]);
+  const { bus } = useBusinessUnits();
+  const [bu, setBu] = useState<string>("B2B");
+  useEffect(() => { if (bus.length && !bus.find(b => b.code === bu)) setBu(bus[0].code); }, [bus, bu]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [referenceMonth, setReferenceMonth] = useState<string>(() => {
+    const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const referenceDate = `${referenceMonth}-01`;
 
   useEffect(() => {
     (async () => {
@@ -40,17 +47,37 @@ function InputsPage() {
       if (!u.user) return;
       const { data: p } = await supabase.from("profiles").select("department").eq("id", u.user.id).maybeSingle();
       setDept(p?.department || "");
-      const { data: ls } = await supabase.from("waterfall_lines").select("*").eq("kind","main").order("sort_order");
+      const { data: ls } = await supabase.from("waterfall_lines").select("*").order("sort_order");
       setLines((ls as Line[]) || []);
       const { data: cs } = await supabase.from("customers").select("id,customer_name,bu").order("customer_name");
       setCustomers((cs as Customer[]) || []);
-      const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department");
-      setInputs(ins || []);
     })();
   }, []);
 
-  const myLines = useMemo(() => lines.filter(l => l.department === dept), [lines, dept]);
+  useEffect(() => {
+    (async () => {
+      const { data: ins } = await supabase
+        .from("line_inputs")
+        .select("line_code,customer_id,value,priority,department,ai_extraction")
+        .eq("reference_date", referenceDate);
+      setInputs(ins || []);
+    })();
+  }, [referenceDate]);
+
+  const myMainLines = useMemo(() => lines.filter(l => l.kind === "main" && l.department === dept), [lines, dept]);
+  const subsByMain = useMemo(() => {
+    const m = new Map<number, Line[]>();
+    for (const l of lines) {
+      if (l.kind !== "sub" || l.department !== dept || l.main_no == null) continue;
+      const arr = m.get(l.main_no) || [];
+      arr.push(l);
+      m.set(l.main_no, arr);
+    }
+    return m;
+  }, [lines, dept]);
+  const myLines = myMainLines;
   const buCustomers = useMemo(() => customers.filter(c => c.bu === bu), [customers, bu]);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   // Progress bars
   const myTotal = myLines.length * buCustomers.length;
@@ -80,10 +107,13 @@ function InputsPage() {
   const saveValue = async (line_code: string, customer_id: string, value: number | null, priority: string) => {
     setBusy(`${line_code}:${customer_id}`);
     const { error } = await supabase.from("line_inputs").upsert({
-      line_code, customer_id, bu, department: dept, value, priority,
-    }, { onConflict: "line_code,customer_id,bu" });
+      line_code, customer_id, bu, department: dept, value, priority, reference_date: referenceDate,
+    }, { onConflict: "line_code,customer_id,bu,reference_date" });
     if (!error) {
-      const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department");
+      const { data: ins } = await supabase
+        .from("line_inputs")
+        .select("line_code,customer_id,value,priority,department,ai_extraction")
+        .eq("reference_date", referenceDate);
       setInputs(ins || []);
     }
     setBusy(null);
@@ -108,9 +138,13 @@ function InputsPage() {
       await supabase.from("line_inputs").upsert({
         line_code: line.code, customer_id: m.customer_id, bu, department: dept,
         value: m.value, priority: "P1", file_path: path, ai_extraction: m,
-      }, { onConflict: "line_code,customer_id,bu" });
+        reference_date: referenceDate,
+      }, { onConflict: "line_code,customer_id,bu,reference_date" });
     }
-    const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department");
+    const { data: ins } = await supabase
+      .from("line_inputs")
+      .select("line_code,customer_id,value,priority,department,ai_extraction")
+      .eq("reference_date", referenceDate);
     setInputs(ins || []);
     setBusy(null);
   };
@@ -127,11 +161,18 @@ function InputsPage() {
         <p className="text-sm text-muted-foreground mt-2">Você vê e edita apenas as linhas do seu departamento. Outros departamentos veem totais agregados.</p>
       </div>
 
-      <div className="inline-flex border border-border">
-        {(["B2B","B2C"] as const).map(b => (
-          <button key={b} onClick={() => setBu(b)}
-            className={`px-6 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${bu===b ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>{b}</button>
-        ))}
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="inline-flex border border-border">
+          {bus.map(b => (
+            <button key={b.code} onClick={() => setBu(b.code)}
+              className={`px-6 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${bu===b.code ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>{b.label}</button>
+          ))}
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="eyebrow text-[10px]">Período de referência</span>
+          <input type="month" value={referenceMonth} onChange={(e) => setReferenceMonth(e.target.value)}
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[160px] font-mono" />
+        </div>
       </div>
 
       {/* Progress: dept */}
@@ -219,21 +260,98 @@ function InputsPage() {
                         </select>
                       </td>
                       <td className="px-6 py-2 text-right">
-                        <input type="number" defaultValue={row?.value ?? ""} placeholder="0"
-                          className="w-full bg-transparent border-b border-border focus:border-primary focus:outline-none py-1 text-right font-mono"
-                          onBlur={(e) => {
-                            const v = e.target.value === "" ? null : Number(e.target.value);
-                            saveValue(l.code, c.id, v, row?.priority || "P1");
-                          }} />
+                        <div className="flex items-center justify-end gap-2">
+                          <ConfidenceBadge ext={row?.ai_extraction} />
+                          <input type="number" defaultValue={row?.value ?? ""} placeholder="0"
+                            className="w-40 bg-transparent border-b border-border focus:border-primary focus:outline-none py-1 text-right font-mono"
+                            onBlur={(e) => {
+                              const v = e.target.value === "" ? null : Number(e.target.value);
+                              saveValue(l.code, c.id, v, row?.priority || "P1");
+                            }} />
+                        </div>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+            {(() => {
+              const subs = subsByMain.get(l.main_no ?? -1) || [];
+              if (subs.length === 0) return null;
+              const isOpen = !!expanded[l.code];
+              return (
+                <div className="border-t border-border">
+                  <button onClick={() => setExpanded(s => ({ ...s, [l.code]: !isOpen }))}
+                    className="w-full px-6 py-3 text-left text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary/40 flex items-center justify-between">
+                    <span>{isOpen ? "▾" : "▸"} Sublinhas ({subs.length}) · entrada manual</span>
+                    <span className="text-muted-foreground normal-case tracking-normal">Use as sublinhas para detalhar a linha #{l.code}, ou preencha só o total acima.</span>
+                  </button>
+                  {isOpen && (
+                    <div className="divide-y divide-border">
+                      {subs.map(s => (
+                        <div key={s.code} className="px-6 py-4">
+                          <div className="flex items-baseline gap-3 mb-2">
+                            <span className="text-xs font-mono text-muted-foreground">#{s.code}</span>
+                            <span className="text-sm text-foreground">{s.label}</span>
+                          </div>
+                          <table className="w-full text-sm">
+                            <tbody>
+                              {buCustomers.map(c => {
+                                const row = inputs.find(i => i.line_code === s.code && i.customer_id === c.id);
+                                return (
+                                  <tr key={c.id} className="border-t border-border/60">
+                                    <td className="px-2 py-1.5">{c.customer_name}</td>
+                                    <td className="px-2 py-1.5 w-32">
+                                      <select defaultValue={row?.priority || "P1"} className="bg-transparent border border-border px-2 py-1 text-xs"
+                                        onChange={(e) => saveValue(s.code, c.id, row?.value ?? null, e.target.value)}>
+                                        <option>P1</option><option>P2</option><option>P3</option><option>MANUAL</option><option>RATEIO</option>
+                                      </select>
+                                    </td>
+                                    <td className="px-2 py-1.5 text-right w-48">
+                                      <div className="flex items-center justify-end gap-2">
+                                        <ConfidenceBadge ext={row?.ai_extraction} />
+                                        <input type="number" defaultValue={row?.value ?? ""} placeholder="0"
+                                          className="w-32 bg-transparent border-b border-border focus:border-primary focus:outline-none py-1 text-right font-mono"
+                                          onBlur={(e) => {
+                                            const v = e.target.value === "" ? null : Number(e.target.value);
+                                            saveValue(s.code, c.id, v, row?.priority || "P1");
+                                          }} />
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         ))}
       </div>
     </div>
+  );
+}
+
+function ConfidenceBadge({ ext }: { ext: any }) {
+  const c = typeof ext?.confidence === "number" ? ext.confidence : null;
+  if (c === null) return null;
+  if (c < 0.7) {
+    return (
+      <span title={`Confiança da IA: ${(c * 100).toFixed(0)}%`}
+        className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] font-semibold bg-[hsl(var(--cascata-outflow)/0.15)] text-[hsl(var(--cascata-outflow))] border border-[hsl(var(--cascata-outflow)/0.4)]">
+        Revisar · {(c * 100).toFixed(0)}%
+      </span>
+    );
+  }
+  return (
+    <span title={`Confiança da IA: ${(c * 100).toFixed(0)}%`}
+      className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+      {(c * 100).toFixed(0)}%
+    </span>
   );
 }

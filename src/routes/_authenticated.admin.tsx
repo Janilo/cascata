@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ShieldCheck, ShieldOff, Check, X } from "lucide-react";
+import { ShieldCheck, ShieldOff, Check, X, Plus, Trash2 } from "lucide-react";
 
 const DEPARTMENTS = [
   "CEO", "Comercial", "PS", "Produto", "Fiscal", "Financeiro",
@@ -27,12 +27,18 @@ type AuditRow = {
   changed_by: string | null; changed_at: string;
 };
 
+type BU = { code: string; label: string; sort_order: number };
+
 function AdminPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [audit, setAudit] = useState<AuditRow[]>([]);
   const [nameById, setNameById] = useState<Map<string, string>>(new Map());
+
+  const [bus, setBus] = useState<BU[]>([]);
+  const [newBuCode, setNewBuCode] = useState("");
+  const [newBuLabel, setNewBuLabel] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -55,9 +61,32 @@ function AdminPage() {
       .order("changed_at", { ascending: false })
       .limit(200);
     setAudit((a as AuditRow[]) || []);
+    const { data: b } = await supabase.from("business_units").select("code,label,sort_order").order("sort_order");
+    setBus((b as BU[]) || []);
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
+
+  const addBu = async () => {
+    const code = newBuCode.trim().toUpperCase();
+    const label = newBuLabel.trim() || code;
+    if (!code) return;
+    const nextOrder = (bus[bus.length - 1]?.sort_order ?? 0) + 10;
+    const { error } = await supabase.from("business_units").insert({ code, label, sort_order: nextOrder });
+    if (error) { alert(error.message); return; }
+    setNewBuCode(""); setNewBuLabel("");
+    load();
+  };
+  const renameBu = async (code: string, label: string) => {
+    await supabase.from("business_units").update({ label }).eq("code", code);
+    load();
+  };
+  const delBu = async (code: string) => {
+    if (!confirm(`Excluir BU "${code}"? Dados existentes em customers/line_inputs com este código não serão apagados, mas a BU some dos seletores.`)) return;
+    const { error } = await supabase.from("business_units").delete().eq("code", code);
+    if (error) { alert(error.message); return; }
+    load();
+  };
 
   const setRole = async (userId: string, role: "admin" | "member") => {
     await supabase.from("user_roles").delete().eq("user_id", userId);
@@ -112,7 +141,7 @@ function AdminPage() {
                   </select>
                 </td>
                 <td className="px-6 py-3">
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-wider rounded ${r.is_approved ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-wider rounded ${r.is_approved ? "pill-inflow" : "bg-muted text-muted-foreground"}`}>
                     {r.is_approved ? <><Check className="w-3 h-3" /> Sim</> : <><X className="w-3 h-3" /> Não</>}
                   </span>
                 </td>
@@ -127,7 +156,7 @@ function AdminPage() {
                     </button>
                   ) : (
                     <button onClick={() => setApproved(r.id, true)}
-                      className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.12em] text-emerald-700 hover:opacity-80">
+                      className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.12em] delta-up hover:opacity-80">
                       <Check className="w-3.5 h-3.5" /> Aprovar
                     </button>
                   )}
@@ -151,6 +180,71 @@ function AdminPage() {
           </tbody>
         </table>
       </div>
+
+      <div>
+        <p className="eyebrow">BUSINESS UNITS</p>
+        <h2 className="font-display text-2xl text-primary mt-2">Unidades de negócio</h2>
+        <p className="text-sm text-muted-foreground mt-2">
+          Edite o nome exibido das BUs ou cadastre novas. O código (ex: B2B) é o identificador interno usado em clientes, inputs e organograma — não pode ser alterado depois de criado.
+        </p>
+      </div>
+
+      <div className="bg-card border border-border">
+        <table className="w-full text-sm">
+          <thead className="bg-secondary/40 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+            <tr>
+              <th className="text-left px-6 py-3 w-32">Código</th>
+              <th className="text-left px-6 py-3">Nome exibido</th>
+              <th className="text-right px-6 py-3 w-32">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bus.map(b => (
+              <tr key={b.code} className="border-t border-border">
+                <td className="px-6 py-3 font-mono text-xs">{b.code}</td>
+                <td className="px-6 py-3">
+                  <input
+                    defaultValue={b.label}
+                    onBlur={(e) => { if (e.target.value !== b.label) renameBu(b.code, e.target.value); }}
+                    className="bg-transparent border border-border rounded px-2 py-1 text-sm w-full max-w-md"
+                  />
+                </td>
+                <td className="px-6 py-3 text-right">
+                  <button onClick={() => delBu(b.code)}
+                    className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.12em] text-muted-foreground hover:text-destructive">
+                    <Trash2 className="w-3.5 h-3.5" /> Excluir
+                  </button>
+                </td>
+              </tr>
+            ))}
+            <tr className="border-t border-border bg-secondary/20">
+              <td className="px-6 py-3">
+                <input
+                  value={newBuCode}
+                  onChange={(e) => setNewBuCode(e.target.value)}
+                  placeholder="B2X"
+                  className="bg-transparent border border-border rounded px-2 py-1 font-mono text-xs uppercase w-full"
+                />
+              </td>
+              <td className="px-6 py-3">
+                <input
+                  value={newBuLabel}
+                  onChange={(e) => setNewBuLabel(e.target.value)}
+                  placeholder="Nome exibido (opcional)"
+                  className="bg-transparent border border-border rounded px-2 py-1 text-sm w-full max-w-md"
+                />
+              </td>
+              <td className="px-6 py-3 text-right">
+                <button onClick={addBu}
+                  className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.12em] text-primary hover:opacity-80">
+                  <Plus className="w-3.5 h-3.5" /> Adicionar BU
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
 
       <div>
         <p className="eyebrow">AUDITORIA</p>
@@ -187,14 +281,14 @@ function AdminPage() {
                   <td className="px-6 py-2 text-xs text-muted-foreground whitespace-nowrap">{new Date(a.changed_at).toLocaleString("pt-BR")}</td>
                   <td className="px-6 py-2 text-xs">{a.changed_by ? (nameById.get(a.changed_by) || a.changed_by.slice(0, 8)) : "—"}</td>
                   <td className="px-6 py-2">
-                    <span className={`inline-block px-2 py-0.5 text-[10px] uppercase tracking-wider rounded ${a.action === "INSERT" ? "bg-emerald-600 text-white" : a.action === "DELETE" ? "bg-destructive text-destructive-foreground" : "bg-secondary"}`}>{a.action}</span>
+                    <span className={`inline-block px-2 py-0.5 text-[10px] uppercase tracking-wider rounded ${a.action === "INSERT" ? "pill-inflow" : a.action === "DELETE" ? "bg-destructive text-destructive-foreground" : "bg-secondary"}`}>{a.action}</span>
                   </td>
                   <td className="px-6 py-2 font-mono text-xs">{a.line_code || "—"}</td>
                   <td className="px-6 py-2 text-xs">{a.bu || "—"}</td>
                   <td className="px-6 py-2 text-xs">{a.department || "—"}</td>
                   <td className="px-6 py-2 text-right font-mono text-xs">{fmt(a.old_value)}</td>
                   <td className="px-6 py-2 text-right font-mono text-xs">{fmt(a.new_value)}</td>
-                  <td className={`px-6 py-2 text-right font-mono text-xs ${delta > 0 ? "text-emerald-600" : delta < 0 ? "text-destructive" : "text-muted-foreground"}`}>{delta === 0 ? "—" : fmt(delta)}</td>
+                  <td className={`px-6 py-2 text-right tabular text-xs ${delta > 0 ? "delta-up" : delta < 0 ? "delta-down" : "delta-zero"}`}>{delta === 0 ? "—" : fmt(delta)}</td>
                 </tr>
               );
             })}

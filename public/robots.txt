@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin
+Disallow: /auditoria
+Disallow: /clientes
+Disallow: /comparativo
+Disallow: /custo-de-servir
+Disallow: /inputs
+Disallow: /organograma
+Disallow: /waterfall
+Disallow: /aguardando-aprovacao
+Disallow: /share/
+
+Sitemap: https://cascata.pereirasaraiva.com/sitemap.xml

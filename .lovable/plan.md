@@ -1,91 +1,55 @@
 
-# Cascata — plano de implementação
+# Auditoria de Design System — Cascata vs. handoff `jps-ds-cascata` v0.1
 
-App de Price Waterfall multiusuário com 5 páginas, separação por departamento, leitura de arquivos com IA e visual do design system J P Saraiva (Fraunces + Inter Tight, roxo `#4A1942` + marinho + mostarda, hairlines, sem cantos arredondados, fundo cream).
+Comparei `src/styles.css`, os componentes shadcn em `src/components/ui/*` e as rotas em `src/routes/*` contra o bundle de referência (`tokens/`, `styles/components.css`, `styles/page.css`, `index.html` e os chats). A boa notícia: tokens primitivos, paleta e tipografia já estão alinhados. O que diverge é **uso** — várias rotas escapam para utilitários Tailwind crus e alguns componentes shadcn ainda têm radii/sombras do tema padrão.
 
-## Stack & infra
+## O que já está correto (não tocar)
+- Paleta `--cascata-*` (navy, gold, inflow, outflow, steel, abyss, mist, paper, stone) idêntica ao handoff.
+- Fontes Fraunces variável + Inter Tight carregadas; `--font-display` / `--font-sans` mapeados.
+- Tokens de densidade (`--cascata-row-h-*`, `--cascata-topbar-h`, `--cascata-sidebar-w`) presentes.
+- Utilitários de waterfall (`bar-inflow/outflow/subtotal/margin`, `pill-*`) presentes.
+- Sidebar autenticada já usa `--cascata-abyss`. Wordmark unificado via `CascataWordmark`.
 
-- **Lovable Cloud** (auth email/senha + Postgres + Storage para uploads).
-- **Lovable AI Gateway** (`google/gemini-3-flash-preview`) chamado via `createServerFn` para extrair campos de arquivos enviados.
-- **Recharts** para waterfall e barras de progresso compostas.
-- **Design system J P Saraiva** copiado para `src/styles.css` (tokens CSS + fontes Fraunces/Inter Tight locais em `public/fonts/`), aplicado globalmente. Componentes shadcn re-tematizados via tokens semânticos.
+## Sugestões priorizadas
 
-## Modelo de dados (Supabase)
+### P0 — Quebras semânticas (cores cruas em rotas de produto)
+1. **`_authenticated.comparativo.tsx`** linhas 183 e 275: `text-emerald-700` / `text-rose-700` para deltas → trocar por `text-[color:var(--cascata-inflow)]` / `text-[color:var(--cascata-outflow)]` (ou criar classes `.delta-up` / `.delta-down`).
+2. **`_authenticated.admin.tsx`** linha 159 (`text-emerald-700`) e linha 291 (`text-emerald-600`) → mesmas trocas. O ícone "approve" deve usar `--cascata-inflow`.
+3. **`_authenticated.custo-de-servir.tsx`** linhas 112–113: `bg-emerald-100 text-emerald-900` / `bg-amber-100 text-amber-900` → trocar pelos utilitários já existentes `pill-inflow` e `pill-margin`.
+4. **Overlays shadcn** (`dialog.tsx`, `alert-dialog.tsx`, `sheet.tsx`, `drawer.tsx`) usam `bg-black/80`. DS pede tom marinho: `bg-[color:var(--cascata-abyss)]/70`. Editar uma vez nos 4 componentes resolve em todo o app.
 
-- `profiles` (id, full_name, department, created_at) — depto definido por admin.
-- `user_roles` (user_id, role: `admin`|`member`) — função `has_role()` security-definer.
-- `customers` (id, account_id, account_name, customer_name, cnpj, bu `B2B|B2C`, attrs jsonb p/ rateios).
-- `org_nodes` (id, parent_id, bu, department, leader, channel, account, customer, salary numeric) — estrutura hierárquica.
-- `waterfall_lines` (seed estática derivada da planilha: code `'1'..'29'`, sub_code `'7.1'..'7.33'`, category, label, department, p1_desc, p2_desc, p3_desc, kind `revenue|deduction|cost|subtotal`, sort_order).
-- `line_inputs` (id, line_code, customer_id, bu, department, priority `P1|P2|P3|MANUAL|RATEIO`, value numeric, rateio_key text, file_path, ai_extraction jsonb, updated_by, updated_at) — RLS: SELECT/UPDATE só do próprio depto (ou admin); leitura agregada para waterfall via server fn `supabaseAdmin` que devolve só totais.
-- Bucket `inputs` no Storage com RLS por depto.
+### P1 — Componentes shadcn fora do contrato visual do DS
+5. **`Card`** usa `rounded-xl shadow` (xl = 4px no nosso tema, OK) mas o handoff prescreve `border: 1px solid var(--cascata-stone)` **sem sombra** por padrão e sombra só em `data-elev="raised"`. Sugestão: remover `shadow` do default e expor variante `elevated`.
+6. **Anel de foco** (`--ring`) está em navy; o handoff usa **gold** (`outline: 2px solid var(--cascata-gold); outline-offset: 2px`) — é o detalhe que carimba a marca em interação. Trocar `--ring: var(--cascata-gold)` no light mode.
+7. **`Button`** default: `shadow` na variante `default` e `shadow-sm` em outras — o handoff é flat. Remover sombras das variantes `default`/`secondary`/`outline`/`destructive`.
+8. **`Input`** já usa `rounded-md` (2px). Adicionar comportamento de foco do DS: `focus-visible:ring-[3px] focus-visible:ring-[color:var(--cascata-navy-soft)] focus-visible:border-[color:var(--cascata-navy)]` (hoje é `ring-1`).
+9. **Tabs**: indicador atual é fundo branco em pill; handoff usa underline em navy. Refazer `TabsTrigger` para `border-b-2 data-[state=active]:border-[color:var(--cascata-navy)] data-[state=active]:text-[color:var(--cascata-navy-deep)]`.
+10. **Badge tones**: criar `data-tone="brand|success|warning|danger|ai"` mapeando aos `--cascata-*-soft` / `*-ink` do handoff em vez das variantes shadcn `default/secondary/destructive`.
 
-GRANTs explícitos em todas as tabelas + RLS por `auth.uid()`/`has_role()`/`profiles.department`.
+### P2 — Tipografia e ritmo editorial
+11. **Hero do `/`**: o headline deve ser Fraunces *italic* opsz 144 (referência: `chat2` + `page.css .hero h1`). Conferir que `<h1>` usa `font-display italic` e `font-variation-settings: "opsz" 144`.
+12. **Empty states**: criar componente `EmptyState` com variante `feel="brand"` usando Fraunces italic 28px (`--cascata-slate`) — hoje empty states são genéricos do shadcn.
+13. **`.eyebrow`** já existe; padronizar uso em cabeçalhos de seção (atualmente alguns títulos usam só `text-xs uppercase tracking-wider`).
+14. **Numerais tabulares**: garantir `.cascata-num` (ou `tabular-nums`) em **todas** as colunas numéricas de `waterfall`, `comparativo`, `clientes`, `custo-de-servir`. Auditoria rápida mostra que algumas tabelas dependem só do `font-mono`.
 
-## Páginas
+### P3 — Tabelas financeiras
+15. Aplicar a semântica `data-row="subtotal"` / `data-row="total"` do handoff nas tabelas de waterfall e comparativo (fundo `--cascata-navy-soft` para subtotal, `--cascata-navy` + texto branco para total). Hoje as linhas de subtotal são apenas negritadas.
+16. Cabeçalho `<th>`: padronizar para `text-xs uppercase tracking-[0.14em] text-muted-foreground bg-paper` como no `.cascata-table thead th`.
 
-### 1. `/` — Landing & login (estilo lente.pereirasaraiva.com)
-- Header com wordmark "Cascata" em Fraunces + selo, links "Entrar" / "Criar conta".
-- Hero esquerda-alinhado: eyebrow `PRICING · WATERFALL`, h1 grande serif com 1 palavra em itálico ("que se _aprofunda_ por cliente"), parágrafo em Inter Tight, dois CTAs (botão sólido roxo + link "Entrar").
-- Seção "Método" 01/02/03 em mostarda (Definir → Inputs por depto → Síntese P&L).
-- Fundo cream com paper-grain, hairlines, sem cards arredondados.
-- Formulários `/login` e `/signup` em modal-route ou rota dedicada, mesmo layout sóbrio.
-
-### 2. `/waterfall` (protegida) — Price Waterfall
-- Toggle BU `B2B | B2C` no topo (segmented control hairline).
-- KPIs: Receita Bruta, Deduções, Receita Líquida, Margem Pocket, Custo de Servir.
-- **Gráfico waterfall principal** (Recharts BarChart stacked): uma barra por marco do P&L #1..#29 com subtotais destacados. Cores: receitas marinho, deduções roxo, custos verde, subtotais mostarda. Hairlines, labels no fim, sem legend box.
-- Linha 7 ("Descontos comerciais") é clicável → abre **gráfico secundário abaixo** (slide-down) com waterfall só das sublinhas 7.1–7.33 agrupadas por categoria (Volume/Prazo/Segmento/Promo/Bundle/Estratégico/Canal/Retenção/Contratual). Esse subgráfico nunca se mistura ao principal.
-- Botão "Inputs por departamento" → `/inputs`.
-- Tabela detalhada por cliente ao final, com export CSV.
-
-### 3. `/inputs` (protegida) — Inputs por departamento
-- Server fn descobre `profile.department` e filtra `waterfall_lines.department = X`. Admins veem todos via toggle.
-- Para cada linha do depto × cada cliente: card com 4 opções de fonte:
-  - **P1 / P2 / P3** (textos vindos das colunas E/F/G) — escolhe priorização (P1 default; P2/P3 fallback).
-  - **Manual** — input numérico.
-  - Quando o tipo escolhido for "Rateio" (P3), só marca a chave de rateio (#seats, ARR, etc.); valor é calculado server-side.
-- **Upload de arquivo** (PDF/XLSX/CSV) por linha ou em lote. Server fn `extractInputs`:
-  1. salva no bucket `inputs`,
-  2. extrai texto (xlsx via SheetJS, pdf via pdf-parse no Worker; fallback texto bruto),
-  3. envia ao Lovable AI Gateway com schema tool-calling pedindo `{ customer_match, line_code, value, currency, confidence }[]`,
-  4. grava em `line_inputs` com `ai_extraction` para auditoria.
-- Toast com 402/429 do gateway.
-- **Barras de progresso**:
-  - **Barra do depto**: % de campos do próprio depto preenchidos.
-  - **Barra global empilhada**: largura total = todos os campos; cada depto tem cor distinta (marinho/roxo/verde/mostarda/teal/…); a parte preenchida do depto desenhada sólida sobre a parte translúcida da mesma cor — assim dá pra ver visualmente qual depto está atrasado.
-
-### 4. `/organograma` (protegida) — Organograma
-- Estrutura vazia inicial + botão "Importar planilha de organograma" (upload XLSX, IA mapeia colunas).
-- Visualização em árvore colapsável: BU → Departamento → Líder direto → Canal → Conta → Cliente. Apenas esses campos visíveis (salário oculto na UI mas usado nos cálculos).
-- **Alocação de salário como gasto**: server fn calcula, para cada nó com salário, o cliente final; quando faltar valor em algum nível da hierarquia, faz rateio no último nível completo (proporcional à receita bruta daquele nível). Resultado flui para a linha "Pessoal" do waterfall.
-- CRUD manual de nós para ajustes pontuais.
-
-### 5. `/clientes` (protegida) — Clientes
-- Tabela: ID conta, Conta, Nome cliente, CNPJ, + colunas dinâmicas para cada chave de rateio do waterfall (# seats, ARR, consumo, vertical, etc.).
-- Ações: "Cadastrar manualmente" (form) e "Importar arquivo" (upload → IA extrai linhas → preview → confirmar).
-- Filtro por BU, busca por nome/CNPJ, export CSV.
-
-## Layout app
-
-- Sidebar fixa esquerda (hairline) com links Waterfall / Inputs / Organograma / Clientes + avatar + logout. Header com breadcrumb e selo "Cascata".
-- Rotas protegidas sob `_authenticated/` (TanStack), `beforeLoad` redireciona para `/login` mantendo `redirect=` search param.
+### P4 — Detalhes de marca
+17. **Toast/Sonner**: o DS prescreve toast em `--cascata-abyss` com dot colorido por tom. Conferir `src/components/ui/sonner.tsx` e alinhar.
+18. **KPI cards**: adicionar variante `data-accent="money"` com faixa superior 2px em `--cascata-gold` para KPIs monetários (margem, receita líquida).
+19. **Sombras**: substituir `shadow-sm/shadow` shadcn pelo token `--shadow-card` (já definido em `:root`) onde elevação for necessária — assim sombras são de fato marinho-frio.
+20. **Dark mode**: `:root.dark` está definido mas nenhuma página oferece toggle. Decidir: (a) remover as variáveis dark, ou (b) implementar toggle. O produto financeiro do handoff é claro por design — recomendo remover para evitar drift.
 
 ## Detalhes técnicos
+- Todas as trocas P0/P1 são CSS/Tailwind — sem migração, sem mudança de schema, sem mudança em server functions.
+- Onde possível, prefiro estender utilitários existentes em `styles.css` (ex.: `.delta-up`, `.delta-down`, `.table-row-subtotal`) a espalhar arbitrary-values nas rotas.
+- O bundle de referência traz `--cascata-tnum` e a classe `.tabular` — usar nas tabelas em vez de só `font-mono`.
 
-- Seed dos 29 marcos + 33 sublinhas vem de um JSON gerado da planilha enviada (cores E/F/G + departamentos preservados).
-- Cálculo do waterfall: server fn agrega `line_inputs` por `line_code`+`bu`, aplicando priorização P1>P2>P3>MANUAL e rateios; retorna `{lineCode, value, runningTotal}[]` para o gráfico.
-- Edge function de IA usa tool-calling para retornar JSON estruturado (sem parsing frágil); confidence < 0.7 marca a linha como "revisar".
-- Single root `__root.tsx` mantido; rotas em `src/routes/` com convenção plana.
+## Fora de escopo (sinalizo, não execute sem ok)
+- Substituir componentes shadcn pelos `.cascata-*` puros do handoff (refactor grande; só faz sentido se quiser abandonar shadcn).
+- Implementar a página `/styleguide` espelhando o `index.html` do handoff (útil mas é trabalho novo, não auditoria).
 
-## Entregáveis nesta primeira iteração
-
-1. Habilitar Lovable Cloud + criar tabelas, RLS, bucket e seed das linhas.
-2. Aplicar design system JPS globalmente (fontes locais, tokens, base components).
-3. Página 1 (landing + auth) — visual lente-like.
-4. Página 2 (waterfall) com dados de exemplo, toggle BU e drill-down da linha 7.
-5. Página 3 (inputs) com upload + IA + duas barras de progresso.
-6. Página 4 (organograma) com import e árvore.
-7. Página 5 (clientes) com CRUD + import.
-
-Próximos itens (em iteração seguinte, se você quiser): permissões finas por linha, histórico/auditoria, exports PDF do waterfall, e dashboards comparativos entre BUs.
+## Próximo passo sugerido
+Aprovar P0 + P1 como um único batch (impacto visual alto, risco baixo). P2–P4 podem entrar em sequência. Quer que eu execute tudo de uma vez, só P0+P1, ou prefere escolher itens específicos?

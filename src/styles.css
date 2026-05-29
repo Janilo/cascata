@@ -63,20 +63,24 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
-  /* Cascata palette tokens */
-  --color-navy:    var(--navy);
-  --color-gold:    var(--gold);
-  --color-inflow:  var(--inflow);
+
+  /* Cascata semantic aliases (Tailwind utility surface) */
+  --color-gold: var(--gold);
+  --color-marine: var(--marine);
+  --color-navy: var(--marine);
+  --color-navy-deep: var(--navy-deep);
+  --color-abyss: var(--abyss);
+  --color-steel: var(--steel);
+  --color-green: var(--inflow);
+  --color-inflow: var(--inflow);
   --color-outflow: var(--outflow);
-  --color-steel:   var(--steel);
-  --color-ink:     var(--ink);
-  --color-stone:   var(--stone);
-  --color-paper:   var(--paper);
-  /* backward-compat: existing TSX classes (text-marine, bg-cream, etc.) */
-  --color-marine:  var(--navy);
-  --color-cream:   var(--paper);
-  --color-green:   var(--inflow);
-  --color-soft:    var(--mute);
+  --color-cream: var(--paper);
+  --color-paper: var(--paper);
+  --color-mist: var(--mist);
+  --color-ink: var(--ink);
+  --color-soft: var(--soft);
+  --color-stone: var(--stone);
+
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -92,27 +96,32 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --font-display: "Fraunces", "Source Serif 4", Georgia, serif;
   --font-sans: "Inter Tight", "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Consolas, ui-monospace, monospace;
 }
 
 :root {
   --radius: 2px;
 
   /* ============================================================
-     CASCATA — brand primitives
-     Âncora: marinho profundo · semântica de waterfall financeiro
+     CASCATA PRIMITIVES — paleta marinho-profundo / mostarda
      ============================================================ */
   --cascata-navy:        #103C61;
   --cascata-navy-deep:   #0A2A45;
   --cascata-abyss:       #06192B;
   --cascata-navy-soft:   #E7EEF4;
+  --cascata-navy-ink:    #0A2438;
   --cascata-steel:       #4A7FA8;
+
   --cascata-gold:        #B5871C;
   --cascata-gold-soft:   #F7EFD6;
   --cascata-gold-deep:   #8C6710;
+  --cascata-gold-ink:    #483709;
+
   --cascata-inflow:      #2F7D57;
   --cascata-inflow-soft: #E5F1EA;
   --cascata-outflow:     #B5502E;
   --cascata-outflow-soft:#F6E8E0;
+
   --cascata-ink:         #131E2A;
   --cascata-slate:       #3C4A5A;
   --cascata-mute:        #687A8C;
@@ -121,94 +130,120 @@
   --cascata-mist:        #EDF1F5;
   --cascata-paper:       #F5F8FB;
   --cascata-white:       #FFFFFF;
+
   --cascata-danger:      #B22234;
+  --cascata-success:     #2F7D57;
+  --cascata-warning:     #B5871C;
 
-  /* shadcn semantic tokens → cascata palette */
-  --background:             var(--cascata-paper);
-  --foreground:             var(--cascata-ink);
-  --card:                   var(--cascata-white);
-  --card-foreground:        var(--cascata-ink);
-  --popover:                var(--cascata-white);
-  --popover-foreground:     var(--cascata-ink);
-  --primary:                var(--cascata-navy);
-  --primary-foreground:     var(--cascata-white);
-  --secondary:              var(--cascata-mist);
-  --secondary-foreground:   var(--cascata-slate);
-  --muted:                  var(--cascata-mist);
-  --muted-foreground:       var(--cascata-mute);
-  --accent:                 var(--cascata-gold-soft);
-  --accent-foreground:      var(--cascata-ink);
-  --destructive:            var(--cascata-danger);
+  /* Densidade / layout do produto */
+  --cascata-row-h-sm:    30px;
+  --cascata-row-h-md:    38px;
+  --cascata-row-h-lg:    46px;
+  --cascata-tap-min:     38px;
+  --cascata-sidebar-w:   248px;
+  --cascata-topbar-h:    56px;
+  --cascata-content-max: 1320px;
+  --cascata-tnum:        "tnum" 1, "lnum" 1;
+
+  /* ============================================================
+     SEMANTIC ROLE TOKENS (shadcn / Tailwind)
+     ============================================================ */
+  --background:         var(--cascata-paper);
+  --foreground:         var(--cascata-ink);
+  --card:               var(--cascata-white);
+  --card-foreground:    var(--cascata-ink);
+  --popover:            var(--cascata-white);
+  --popover-foreground: var(--cascata-ink);
+
+  --primary:             var(--cascata-navy);
+  --primary-foreground:  var(--cascata-white);
+
+  --secondary:           var(--cascata-mist);
+  --secondary-foreground: var(--cascata-ink);
+
+  --muted:               var(--cascata-mist);
+  --muted-foreground:    var(--cascata-mute);
+
+  --accent:              var(--cascata-gold);
+  --accent-foreground:   var(--cascata-gold-ink);
+
+  --destructive:           var(--cascata-danger);
   --destructive-foreground: var(--cascata-white);
-  --border:                 var(--cascata-stone);
-  --input:                  var(--cascata-stone);
-  --ring:                   var(--cascata-navy);
 
-  /* Named palette (Tailwind utilities + direct var() refs in TSX) */
-  --navy:       var(--cascata-navy);
-  --navy-deep:  var(--cascata-navy-deep);
-  --gold:       var(--cascata-gold);
-  --gold-soft:  var(--cascata-gold-soft);
-  --inflow:     var(--cascata-inflow);
-  --outflow:    var(--cascata-outflow);
-  --steel:      var(--cascata-steel);
-  --ink:        var(--cascata-ink);
-  --mute:       var(--cascata-mute);
-  --stone:      var(--cascata-stone);
-  --paper:      var(--cascata-paper);
-  /* backward-compat alias used in landing hover */
+  --border: var(--cascata-stone);
+  --input:  var(--cascata-stone);
+  --ring:   var(--cascata-gold);
+
+  /* Aliases legados (Tailwind utilities `bg-marine`, `bg-gold`, etc.) */
+  --ink:         var(--cascata-ink);
+  --soft:        var(--cascata-mute);
+  --stone:       var(--cascata-stone);
+  --paper:       var(--cascata-paper);
+  --mist:        var(--cascata-mist);
+  --marine:      var(--cascata-navy);
+  --navy-deep:   var(--cascata-navy-deep);
+  --abyss:       var(--cascata-abyss);
+  --steel:       var(--cascata-steel);
+  --gold:        var(--cascata-gold);
+  --inflow:      var(--cascata-inflow);
+  --outflow:     var(--cascata-outflow);
   --purple-deep: var(--cascata-navy-deep);
 
-  /* Waterfall semantic colors (chart tokens) */
-  --chart-1: var(--cascata-navy);     /* subtotal / âncora */
-  --chart-2: var(--cascata-gold);     /* margem */
-  --chart-3: var(--cascata-steel);    /* 3ª série */
-  --chart-4: var(--cascata-inflow);   /* entrada positiva */
-  --chart-5: var(--cascata-outflow);  /* saída / dedução */
+  /* Data viz — navy → gold → steel → inflow */
+  --chart-1: var(--cascata-navy);
+  --chart-2: var(--cascata-gold);
+  --chart-3: var(--cascata-steel);
+  --chart-4: var(--cascata-inflow);
+  --chart-5: var(--cascata-outflow);
 
-  --sidebar:                        var(--cascata-white);
-  --sidebar-foreground:             var(--cascata-ink);
-  --sidebar-primary:                var(--cascata-navy);
-  --sidebar-primary-foreground:     var(--cascata-white);
-  --sidebar-accent:                 var(--cascata-navy-soft);
-  --sidebar-accent-foreground:      var(--cascata-navy-deep);
-  --sidebar-border:                 var(--cascata-stone);
-  --sidebar-ring:                   var(--cascata-navy);
-}
+  /* Sidebar (app shell) */
+  --sidebar: var(--cascata-white);
+  --sidebar-foreground: var(--cascata-ink);
+  --sidebar-primary: var(--cascata-navy);
+  --sidebar-primary-foreground: var(--cascata-white);
+  --sidebar-accent: var(--cascata-mist);
+  --sidebar-accent-foreground: var(--cascata-ink);
+  --sidebar-border: var(--cascata-stone);
+  --sidebar-ring: var(--cascata-navy);
 
-.dark {
-  --background:             #0A2A45;
-  --foreground:             #F5F8FB;
-  --card:                   #103C61;
-  --card-foreground:        #F5F8FB;
-  --popover:                #103C61;
-  --popover-foreground:     #F5F8FB;
-  --primary:                #4A7FA8;
-  --primary-foreground:     #06192B;
-  --secondary:              #0A2A45;
-  --secondary-foreground:   #D3DAE2;
-  --muted:                  #0A2A45;
-  --muted-foreground:       #D3DAE2;
-  --accent:                 #0A2A45;
-  --accent-foreground:      #F5F8FB;
-  --destructive:            #E04B5A;
-  --destructive-foreground: #06192B;
-  --border:                 oklch(1 0 0 / 10%);
-  --input:                  oklch(1 0 0 / 15%);
-  --ring:                   #4A7FA8;
+  /* Shadows — tom marinho */
+  --shadow-card:  0 1px 0 rgba(6, 25, 43, 0.03), 0 2px 8px rgba(6, 25, 43, 0.07);
+  --shadow-hover: 0 1px 0 rgba(6, 25, 43, 0.04), 0 8px 24px rgba(16, 60, 97, 0.12);
 }
 
 @layer base {
   * { border-color: var(--color-border); }
-  html, body { font-family: var(--font-sans); letter-spacing: -0.005em; }
+  html, body {
+    font-family: var(--font-sans);
+    letter-spacing: -0.005em;
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.05  0 0 0 0 0.08  0 0 0 0 0.12  0 0 0 0.025 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    /* Cascata é produto digital denso: sem grain de papel. */
   }
-  h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0.012em; }
+  /* Default: produto usa Inter Tight em toda a hierarquia (denso, P&L, números).
+     Fraunces fica reservada a momentos de marca: opt-in com .font-display. */
+  h1, h2, h3, h4 {
+    font-family: var(--font-sans);
+    letter-spacing: -0.012em;
+    color: var(--cascata-navy);
+  }
+  .font-display {
+    font-family: var(--font-display) !important;
+    letter-spacing: -0.012em;
+  }
+  /* Numerais tabulares em qualquer valor financeiro */
+  .cascata-num, .tabular {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: var(--cascata-tnum);
+    text-align: right;
+  }
 }
 
+/* ============================================================
+   Utilities de marca
+   ============================================================ */
 .eyebrow {
   font-size: 11px;
   font-weight: 600;
@@ -216,4 +251,54 @@
   letter-spacing: 0.18em;
   color: var(--cascata-mute);
 }
-.hairline { border-top: 0.5px solid var(--color-border); }
+.hairline { border-top: 0.5px solid var(--cascata-stone); }
+
+/* Waterfall semantics — uso em barras / pills / linhas de P&L */
+.bar-inflow   { background: var(--cascata-inflow); }
+.bar-outflow  { background: var(--cascata-outflow); }
+.bar-subtotal { background: var(--cascata-navy); }
+.bar-margin   { background: var(--cascata-gold); }
+
+.pill-inflow   { background: var(--cascata-inflow-soft);  color: var(--cascata-inflow); }
+.pill-outflow  { background: var(--cascata-outflow-soft); color: var(--cascata-outflow); }
+.pill-margin   { background: var(--cascata-gold-soft);    color: var(--cascata-gold-ink); }
+.pill-navy     { background: var(--cascata-navy-soft);    color: var(--cascata-navy-ink); }
+
+/* Deltas financeiros — usar em colunas Δ, badges de variação */
+.delta-up      { color: var(--cascata-inflow); }
+.delta-down    { color: var(--cascata-outflow); }
+.delta-zero    { color: var(--cascata-mute); }
+
+/* Linhas semânticas de tabela financeira (handoff DS v0.1) */
+tr.row-subtotal > td {
+  background: var(--cascata-navy-soft);
+  color: var(--cascata-navy-ink);
+  font-weight: 600;
+}
+tr.row-total > td {
+  background: var(--cascata-navy);
+  color: var(--cascata-white);
+  font-weight: 600;
+}
+
+/* Cabeçalho de tabela padrão Cascata */
+.th-cascata {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cascata-mute);
+  background: var(--cascata-paper);
+}
+
+/* KPI com faixa mostarda (dinheiro) */
+.kpi-accent-money {
+  position: relative;
+}
+.kpi-accent-money::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--cascata-gold);
+}

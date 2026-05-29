@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_units: {
+        Row: {
+          code: string
+          created_at: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           account_id: string | null
@@ -61,6 +82,7 @@ export type Database = {
           line_code: string
           priority: string
           rateio_key: string | null
+          reference_date: string
           updated_at: string
           updated_by: string | null
           value: number | null
@@ -75,6 +97,7 @@ export type Database = {
           line_code: string
           priority?: string
           rateio_key?: string | null
+          reference_date?: string
           updated_at?: string
           updated_by?: string | null
           value?: number | null
@@ -89,6 +112,7 @@ export type Database = {
           line_code?: string
           priority?: string
           rateio_key?: string | null
+          reference_date?: string
           updated_at?: string
           updated_by?: string | null
           value?: number | null
@@ -227,6 +251,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_approved: boolean
+          is_guest: boolean
         }
         Insert: {
           created_at?: string
@@ -234,6 +259,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_approved?: boolean
+          is_guest?: boolean
         }
         Update: {
           created_at?: string
@@ -241,6 +267,40 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_approved?: boolean
+          is_guest?: boolean
+        }
+        Relationships: []
+      }
+      shared_links: {
+        Row: {
+          bu: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          label: string | null
+          reference_date: string | null
+          token: string
+        }
+        Insert: {
+          bu: string
+          created_at?: string
+          created_by: string
+          expires_at: string
+          id?: string
+          label?: string | null
+          reference_date?: string | null
+          token: string
+        }
+        Update: {
+          bu?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          label?: string | null
+          reference_date?: string | null
+          token?: string
         }
         Relationships: []
       }
@@ -321,6 +381,8 @@ export type Database = {
         Returns: boolean
       }
       is_approved: { Args: { _user_id: string }; Returns: boolean }
+      is_guest: { Args: { _user_id: string }; Returns: boolean }
+      line_owner_department: { Args: { _line_code: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "member"

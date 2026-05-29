@@ -1,7 +1,8 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart3, Upload, Network, Users, LogOut, TrendingDown, ShieldCheck } from "lucide-react";
+import { BarChart3, Upload, Network, Users, LogOut, TrendingDown, ShieldCheck, LineChart, History } from "lucide-react";
+import { CascataWordmark } from "@/components/brand/CascataWordmark";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
@@ -9,6 +10,15 @@ export const Route = createFileRoute("/_authenticated")({
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
       throw redirect({ to: "/login", search: { redirect: location.href } });
+    }
+    // Check approval status (admins bypass)
+    const [{ data: profile }, { data: roles }] = await Promise.all([
+      supabase.from("profiles").select("is_approved").eq("id", data.user.id).maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", data.user.id),
+    ]);
+    const isAdmin = (roles || []).some((r) => r.role === "admin");
+    if (!isAdmin && !profile?.is_approved) {
+      throw redirect({ to: "/aguardando-aprovacao" });
     }
   },
   component: AuthLayout,
@@ -39,18 +49,22 @@ function AuthLayout() {
 
   const navItems = [
     { to: "/waterfall", label: "Waterfall", icon: BarChart3 },
+    { to: "/comparativo", label: "Comparativo", icon: LineChart },
     { to: "/inputs", label: "Inputs", icon: Upload },
     { to: "/custo-de-servir", label: "Custo de servir", icon: TrendingDown },
     { to: "/organograma", label: "Organograma", icon: Network },
     { to: "/clientes", label: "Clientes", icon: Users },
-    ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: ShieldCheck }] : []),
+    ...(isAdmin ? [
+      { to: "/auditoria", label: "Auditoria", icon: History },
+      { to: "/admin", label: "Admin", icon: ShieldCheck },
+    ] : []),
   ];
 
   return (
     <div className="min-h-screen flex">
       <aside className="w-64 border-r border-border bg-card flex flex-col">
-        <Link to="/" className="p-6 border-b border-border">
-          <span className="font-display text-2xl text-primary">Cascata</span>
+        <Link to="/" className="p-6 border-b border-border flex flex-col gap-1" aria-label="Cascata — início">
+          <CascataWordmark height={28} />
           <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="eyebrow mt-1">por J P Saraiva</a>
         </Link>
         <nav className="flex-1 p-4 space-y-1">
