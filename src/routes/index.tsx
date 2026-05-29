@@ -66,10 +66,12 @@ function LandingPage() {
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 px-12 py-8 flex items-center justify-between border-b border-border bg-background/90 backdrop-blur-md">
-        <Link to="/" className="flex items-center gap-3" aria-label="Cascata — início">
-          <CascataWordmark height={30} />
+        <div className="flex items-center gap-3">
+          <Link to="/" aria-label="Cascata — início">
+            <CascataWordmark height={30} />
+          </Link>
           <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="eyebrow">por J P Saraiva</a>
-        </Link>
+        </div>
         <nav className="flex items-center gap-8 text-sm">
           <Link to="/metodologia" className="text-foreground hover:text-primary uppercase tracking-[0.18em] text-xs font-semibold">
             Metodologia
