@@ -72,7 +72,7 @@ function WaterfallPage() {
         const wf = await callWaterfall({ data: { bu, ...filterArgs } });
         const totals = new Map(Object.entries(wf.totalsByCode));
         if (bu === "B2B") setTotalsB2B(totals); else setTotalsB2C(totals);
-        let q = supabase.from("line_inputs").select("line_code,value,customer_id,department").eq("bu", bu);
+        let q = supabase.from("line_inputs").select("line_code,value,customer_id,department").eq("bu", bu).eq("reference_date", referenceDate);
         if (filterArgs.department) q = q.eq("department", filterArgs.department);
         const { data: subs } = await q;
         // Build allowed customer ids matching account/leader/customer filters
