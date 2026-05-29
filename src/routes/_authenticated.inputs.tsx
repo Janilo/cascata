@@ -8,7 +8,7 @@ export const Route = createFileRoute("/_authenticated/inputs")({
   component: InputsPage,
 });
 
-type Line = { code: string; label: string | null; department: string | null; p1_desc: string | null; p2_desc: string | null; p3_desc: string | null; kind: string };
+type Line = { code: string; label: string | null; department: string | null; p1_desc: string | null; p2_desc: string | null; p3_desc: string | null; kind: string; main_no: number | null; sub_no: number | null };
 type Customer = { id: string; customer_name: string; bu: string };
 
 const DEPT_COLORS: Record<string, string> = {
@@ -40,7 +40,7 @@ function InputsPage() {
       if (!u.user) return;
       const { data: p } = await supabase.from("profiles").select("department").eq("id", u.user.id).maybeSingle();
       setDept(p?.department || "");
-      const { data: ls } = await supabase.from("waterfall_lines").select("*").eq("kind","main").order("sort_order");
+      const { data: ls } = await supabase.from("waterfall_lines").select("*").order("sort_order");
       setLines((ls as Line[]) || []);
       const { data: cs } = await supabase.from("customers").select("id,customer_name,bu").order("customer_name");
       setCustomers((cs as Customer[]) || []);
@@ -49,8 +49,20 @@ function InputsPage() {
     })();
   }, []);
 
-  const myLines = useMemo(() => lines.filter(l => l.department === dept), [lines, dept]);
+  const myMainLines = useMemo(() => lines.filter(l => l.kind === "main" && l.department === dept), [lines, dept]);
+  const subsByMain = useMemo(() => {
+    const m = new Map<number, Line[]>();
+    for (const l of lines) {
+      if (l.kind !== "sub" || l.department !== dept || l.main_no == null) continue;
+      const arr = m.get(l.main_no) || [];
+      arr.push(l);
+      m.set(l.main_no, arr);
+    }
+    return m;
+  }, [lines, dept]);
+  const myLines = myMainLines;
   const buCustomers = useMemo(() => customers.filter(c => c.bu === bu), [customers, bu]);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   // Progress bars
   const myTotal = myLines.length * buCustomers.length;
@@ -231,6 +243,58 @@ function InputsPage() {
                 })}
               </tbody>
             </table>
+            {(() => {
+              const subs = subsByMain.get(l.main_no ?? -1) || [];
+              if (subs.length === 0) return null;
+              const isOpen = !!expanded[l.code];
+              return (
+                <div className="border-t border-border">
+                  <button onClick={() => setExpanded(s => ({ ...s, [l.code]: !isOpen }))}
+                    className="w-full px-6 py-3 text-left text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary/40 flex items-center justify-between">
+                    <span>{isOpen ? "▾" : "▸"} Sublinhas ({subs.length}) · entrada manual</span>
+                    <span className="text-muted-foreground normal-case tracking-normal">Use as sublinhas para detalhar a linha #{l.code}, ou preencha só o total acima.</span>
+                  </button>
+                  {isOpen && (
+                    <div className="divide-y divide-border">
+                      {subs.map(s => (
+                        <div key={s.code} className="px-6 py-4">
+                          <div className="flex items-baseline gap-3 mb-2">
+                            <span className="text-xs font-mono text-muted-foreground">#{s.code}</span>
+                            <span className="text-sm text-foreground">{s.label}</span>
+                          </div>
+                          <table className="w-full text-sm">
+                            <tbody>
+                              {buCustomers.map(c => {
+                                const row = inputs.find(i => i.line_code === s.code && i.customer_id === c.id);
+                                return (
+                                  <tr key={c.id} className="border-t border-border/60">
+                                    <td className="px-2 py-1.5">{c.customer_name}</td>
+                                    <td className="px-2 py-1.5 w-32">
+                                      <select defaultValue={row?.priority || "P1"} className="bg-transparent border border-border px-2 py-1 text-xs"
+                                        onChange={(e) => saveValue(s.code, c.id, row?.value ?? null, e.target.value)}>
+                                        <option>P1</option><option>P2</option><option>P3</option><option>MANUAL</option><option>RATEIO</option>
+                                      </select>
+                                    </td>
+                                    <td className="px-2 py-1.5 text-right w-48">
+                                      <input type="number" defaultValue={row?.value ?? ""} placeholder="0"
+                                        className="w-full bg-transparent border-b border-border focus:border-primary focus:outline-none py-1 text-right font-mono"
+                                        onBlur={(e) => {
+                                          const v = e.target.value === "" ? null : Number(e.target.value);
+                                          saveValue(s.code, c.id, v, row?.priority || "P1");
+                                        }} />
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         ))}
       </div>
