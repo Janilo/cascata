@@ -135,9 +135,13 @@ function InputsPage() {
       await supabase.from("line_inputs").upsert({
         line_code: line.code, customer_id: m.customer_id, bu, department: dept,
         value: m.value, priority: "P1", file_path: path, ai_extraction: m,
-      }, { onConflict: "line_code,customer_id,bu" });
+        reference_date: referenceDate,
+      }, { onConflict: "line_code,customer_id,bu,reference_date" });
     }
-    const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department,ai_extraction");
+    const { data: ins } = await supabase
+      .from("line_inputs")
+      .select("line_code,customer_id,value,priority,department,ai_extraction")
+      .eq("reference_date", referenceDate);
     setInputs(ins || []);
     setBusy(null);
   };
