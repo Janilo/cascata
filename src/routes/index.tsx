@@ -65,7 +65,7 @@ function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="px-12 py-8 flex items-center justify-between border-b border-border">
+      <header className="sticky top-0 z-50 px-12 py-8 flex items-center justify-between border-b border-border bg-background/90 backdrop-blur-md">
         <Link to="/" className="flex items-center gap-3" aria-label="Cascata — início">
           <CascataWordmark height={30} />
           <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="eyebrow">por J P Saraiva</a>
