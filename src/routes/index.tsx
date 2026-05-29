@@ -94,6 +94,26 @@ function LandingPage() {
         </div>
       </header>
 
+      {/* Faixa demo-ready */}
+      <div className="border-b border-primary/20 bg-primary/5">
+        <div className="mx-auto max-w-6xl px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-primary">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            <span className="font-mono uppercase tracking-wider">Demo-ready</span>
+            <span className="text-muted-foreground hidden sm:inline">· 5 clientes fictícios, waterfall com drill-down, pronto para apresentar</span>
+          </div>
+          <Link
+            to="/signup"
+            className="rounded-sm border border-primary/40 bg-background px-2.5 py-1 font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+          >
+            Rodar com meus dados →
+          </Link>
+        </div>
+      </div>
+
       {/* Hero + Method */}
       <main className="flex-1">
         <section className="py-24">
@@ -160,6 +180,23 @@ function LandingPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+        {/* CTA — Gostou do que viu? */}
+        <section className="border-t border-border py-16">
+          <div className="mx-auto max-w-5xl px-6 md:px-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+              <p className="eyebrow">Gostou do que viu?</p>
+              <h2 className="mt-3 font-display text-2xl text-primary leading-snug">
+                Suba seus dados e monte o waterfall<br className="hidden md:block" /> em minutos.
+              </h2>
+            </div>
+            <Link
+              to="/signup"
+              className="inline-flex items-center justify-center bg-primary text-primary-foreground px-6 py-3 text-xs font-semibold uppercase tracking-[0.18em] hover:bg-[var(--purple-deep)] transition-colors"
+            >
+              Rodar com meus dados
+            </Link>
           </div>
         </section>
       </main>
