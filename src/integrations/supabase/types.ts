@@ -250,6 +250,39 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_links: {
+        Row: {
+          bu: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          label: string | null
+          reference_date: string | null
+          token: string
+        }
+        Insert: {
+          bu: string
+          created_at?: string
+          created_by: string
+          expires_at: string
+          id?: string
+          label?: string | null
+          reference_date?: string | null
+          token: string
+        }
+        Update: {
+          bu?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          label?: string | null
+          reference_date?: string | null
+          token?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
