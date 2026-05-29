@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Plus, X } from "lucide-react";
 import { getWaterfall } from "@/lib/waterfall.functions";
+import { useBusinessUnits } from "@/hooks/use-business-units";
 
 export const Route = createFileRoute("/_authenticated/comparativo")({
   component: ComparativoPage,
@@ -51,7 +52,9 @@ function kpisFor(totals: Record<string, number>, lines: Line[]) {
 }
 
 function ComparativoPage() {
-  const [bu, setBu] = useState<"B2B" | "B2C">("B2B");
+  const { bus } = useBusinessUnits();
+  const [bu, setBu] = useState<string>("B2B");
+  useEffect(() => { if (bus.length && !bus.find(b => b.code === bu)) setBu(bus[0].code); }, [bus, bu]);
   const [months, setMonths] = useState<string[]>(() => lastNMonths(3));
   const [lines, setLines] = useState<Line[]>([]);
   const [periods, setPeriods] = useState<PeriodData[]>([]);
@@ -124,13 +127,13 @@ function ComparativoPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {(["B2B", "B2C"] as const).map(b => (
+          {bus.map(b => (
             <button
-              key={b}
-              onClick={() => setBu(b)}
-              className={`px-4 py-2 text-xs uppercase tracking-[0.12em] font-semibold border border-border ${bu === b ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}
+              key={b.code}
+              onClick={() => setBu(b.code)}
+              className={`px-4 py-2 text-xs uppercase tracking-[0.12em] font-semibold border border-border ${bu === b.code ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}
             >
-              {b}
+              {b.label}
             </button>
           ))}
         </div>
