@@ -182,6 +182,71 @@ function AdminPage() {
       </div>
 
       <div>
+        <p className="eyebrow">BUSINESS UNITS</p>
+        <h2 className="font-display text-2xl text-primary mt-2">Unidades de negócio</h2>
+        <p className="text-sm text-muted-foreground mt-2">
+          Edite o nome exibido das BUs ou cadastre novas. O código (ex: B2B) é o identificador interno usado em clientes, inputs e organograma — não pode ser alterado depois de criado.
+        </p>
+      </div>
+
+      <div className="bg-card border border-border">
+        <table className="w-full text-sm">
+          <thead className="bg-secondary/40 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+            <tr>
+              <th className="text-left px-6 py-3 w-32">Código</th>
+              <th className="text-left px-6 py-3">Nome exibido</th>
+              <th className="text-right px-6 py-3 w-32">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bus.map(b => (
+              <tr key={b.code} className="border-t border-border">
+                <td className="px-6 py-3 font-mono text-xs">{b.code}</td>
+                <td className="px-6 py-3">
+                  <input
+                    defaultValue={b.label}
+                    onBlur={(e) => { if (e.target.value !== b.label) renameBu(b.code, e.target.value); }}
+                    className="bg-transparent border border-border rounded px-2 py-1 text-sm w-full max-w-md"
+                  />
+                </td>
+                <td className="px-6 py-3 text-right">
+                  <button onClick={() => delBu(b.code)}
+                    className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.12em] text-muted-foreground hover:text-destructive">
+                    <Trash2 className="w-3.5 h-3.5" /> Excluir
+                  </button>
+                </td>
+              </tr>
+            ))}
+            <tr className="border-t border-border bg-secondary/20">
+              <td className="px-6 py-3">
+                <input
+                  value={newBuCode}
+                  onChange={(e) => setNewBuCode(e.target.value)}
+                  placeholder="B2X"
+                  className="bg-transparent border border-border rounded px-2 py-1 font-mono text-xs uppercase w-full"
+                />
+              </td>
+              <td className="px-6 py-3">
+                <input
+                  value={newBuLabel}
+                  onChange={(e) => setNewBuLabel(e.target.value)}
+                  placeholder="Nome exibido (opcional)"
+                  className="bg-transparent border border-border rounded px-2 py-1 text-sm w-full max-w-md"
+                />
+              </td>
+              <td className="px-6 py-3 text-right">
+                <button onClick={addBu}
+                  className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.12em] text-primary hover:opacity-80">
+                  <Plus className="w-3.5 h-3.5" /> Adicionar BU
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+
+      <div>
         <p className="eyebrow">AUDITORIA</p>
         <h2 className="font-display text-2xl text-primary mt-2">Histórico de alterações — Waterfall</h2>
         <p className="text-sm text-muted-foreground mt-2">
