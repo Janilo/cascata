@@ -62,7 +62,8 @@ function WaterfallPage() {
     leader: filterLeader || undefined,
     account: filterAccount || undefined,
     customerId: filterCustomer || undefined,
-  }), [filterDept, filterLeader, filterAccount, filterCustomer]);
+    referenceDate,
+  }), [filterDept, filterLeader, filterAccount, filterCustomer, referenceDate]);
 
   useEffect(() => {
     (async () => {
