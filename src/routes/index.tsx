@@ -16,12 +16,12 @@ function LandingPage() {
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="px-12 py-8 flex items-center justify-between border-b border-border">
-        <Link to="/" className="flex items-baseline gap-3">
-          <span className="font-display text-3xl text-primary" style={{ fontVariationSettings: '"opsz" 144' }}>
+        <div className="flex items-baseline gap-3">
+          <Link to="/" className="font-display text-3xl text-primary hover:opacity-80 transition-opacity" style={{ fontVariationSettings: '"opsz" 144' }}>
             Cascata
-          </span>
-          <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="eyebrow">por J P Saraiva</a>
-        </Link>
+          </Link>
+          <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="eyebrow hidden sm:inline hover:opacity-70 transition-opacity">por J P Saraiva</a>
+        </div>
         <nav className="flex items-center gap-8 text-sm">
           <Link to="/login" className="text-foreground hover:text-primary uppercase tracking-[0.18em] text-xs font-semibold">
             Entrar

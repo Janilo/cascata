@@ -63,13 +63,20 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
-  --color-gold: var(--gold);
-  --color-marine: var(--marine);
-  --color-green: var(--green);
-  --color-cream: var(--cream);
-  --color-ink: var(--ink);
-  --color-soft: var(--soft);
-  --color-stone: var(--stone);
+  /* Cascata palette tokens */
+  --color-navy:    var(--navy);
+  --color-gold:    var(--gold);
+  --color-inflow:  var(--inflow);
+  --color-outflow: var(--outflow);
+  --color-steel:   var(--steel);
+  --color-ink:     var(--ink);
+  --color-stone:   var(--stone);
+  --color-paper:   var(--paper);
+  /* backward-compat: existing TSX classes (text-marine, bg-cream, etc.) */
+  --color-marine:  var(--navy);
+  --color-cream:   var(--paper);
+  --color-green:   var(--inflow);
+  --color-soft:    var(--mute);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -90,74 +97,105 @@
 :root {
   --radius: 2px;
 
-  /* JPS brand */
-  --background: oklch(0.962 0.011 88);          /* cream  F0EEE7 */
-  --foreground: oklch(0.21 0 0);                /* ink     1F1F1F */
-  --card: oklch(0.985 0.006 88);                /* offwhite F8F6F1 */
-  --card-foreground: oklch(0.21 0 0);
-  --popover: oklch(0.985 0.006 88);
-  --popover-foreground: oklch(0.21 0 0);
-  --primary: oklch(0.28 0.082 340);             /* roxo pereira 4A1942 */
-  --primary-foreground: oklch(0.985 0.006 88);
-  --secondary: oklch(0.92 0.012 85);            /* stone D9D6CF */
-  --secondary-foreground: oklch(0.21 0 0);
-  --muted: oklch(0.92 0.012 85);
-  --muted-foreground: oklch(0.45 0.006 80);     /* muted 6B6B6B */
-  --accent: oklch(0.75 0.13 85);                /* gold soft */
-  --accent-foreground: oklch(0.21 0 0);
-  --destructive: oklch(0.43 0.18 25);
-  --destructive-foreground: oklch(0.985 0.006 88);
-  --border: oklch(0.85 0.012 85);
-  --input: oklch(0.85 0.012 85);
-  --ring: oklch(0.28 0.082 340);
+  /* ============================================================
+     CASCATA — brand primitives
+     Âncora: marinho profundo · semântica de waterfall financeiro
+     ============================================================ */
+  --cascata-navy:        #103C61;
+  --cascata-navy-deep:   #0A2A45;
+  --cascata-abyss:       #06192B;
+  --cascata-navy-soft:   #E7EEF4;
+  --cascata-steel:       #4A7FA8;
+  --cascata-gold:        #B5871C;
+  --cascata-gold-soft:   #F7EFD6;
+  --cascata-gold-deep:   #8C6710;
+  --cascata-inflow:      #2F7D57;
+  --cascata-inflow-soft: #E5F1EA;
+  --cascata-outflow:     #B5502E;
+  --cascata-outflow-soft:#F6E8E0;
+  --cascata-ink:         #131E2A;
+  --cascata-slate:       #3C4A5A;
+  --cascata-mute:        #687A8C;
+  --cascata-stone:       #D3DAE2;
+  --cascata-stone-soft:  #E3E8EE;
+  --cascata-mist:        #EDF1F5;
+  --cascata-paper:       #F5F8FB;
+  --cascata-white:       #FFFFFF;
+  --cascata-danger:      #B22234;
 
-  /* JPS palette */
-  --ink: oklch(0.21 0 0);
-  --soft: oklch(0.63 0.012 80);                 /* 94908A */
-  --stone: oklch(0.85 0.012 85);
-  --cream: oklch(0.962 0.011 88);
-  --gold: oklch(0.74 0.14 85);                  /* C9A227 mostarda */
-  --marine: oklch(0.26 0.07 250);               /* 0F2940 */
-  --green: oklch(0.43 0.06 170);                /* 2E5D4F */
-  --purple-deep: oklch(0.24 0.082 340);
+  /* shadcn semantic tokens → cascata palette */
+  --background:             var(--cascata-paper);
+  --foreground:             var(--cascata-ink);
+  --card:                   var(--cascata-white);
+  --card-foreground:        var(--cascata-ink);
+  --popover:                var(--cascata-white);
+  --popover-foreground:     var(--cascata-ink);
+  --primary:                var(--cascata-navy);
+  --primary-foreground:     var(--cascata-white);
+  --secondary:              var(--cascata-mist);
+  --secondary-foreground:   var(--cascata-slate);
+  --muted:                  var(--cascata-mist);
+  --muted-foreground:       var(--cascata-mute);
+  --accent:                 var(--cascata-gold-soft);
+  --accent-foreground:      var(--cascata-ink);
+  --destructive:            var(--cascata-danger);
+  --destructive-foreground: var(--cascata-white);
+  --border:                 var(--cascata-stone);
+  --input:                  var(--cascata-stone);
+  --ring:                   var(--cascata-navy);
 
-  /* Data viz: marinho → roxo → verde → mostarda */
-  --chart-1: var(--marine);
-  --chart-2: var(--primary);
-  --chart-3: var(--green);
-  --chart-4: var(--gold);
-  --chart-5: var(--soft);
+  /* Named palette (Tailwind utilities + direct var() refs in TSX) */
+  --navy:       var(--cascata-navy);
+  --navy-deep:  var(--cascata-navy-deep);
+  --gold:       var(--cascata-gold);
+  --gold-soft:  var(--cascata-gold-soft);
+  --inflow:     var(--cascata-inflow);
+  --outflow:    var(--cascata-outflow);
+  --steel:      var(--cascata-steel);
+  --ink:        var(--cascata-ink);
+  --mute:       var(--cascata-mute);
+  --stone:      var(--cascata-stone);
+  --paper:      var(--cascata-paper);
+  /* backward-compat alias used in landing hover */
+  --purple-deep: var(--cascata-navy-deep);
 
-  --sidebar: oklch(0.985 0.006 88);
-  --sidebar-foreground: oklch(0.21 0 0);
-  --sidebar-primary: oklch(0.28 0.082 340);
-  --sidebar-primary-foreground: oklch(0.985 0.006 88);
-  --sidebar-accent: oklch(0.92 0.012 85);
-  --sidebar-accent-foreground: oklch(0.21 0 0);
-  --sidebar-border: oklch(0.85 0.012 85);
-  --sidebar-ring: oklch(0.28 0.082 340);
+  /* Waterfall semantic colors (chart tokens) */
+  --chart-1: var(--cascata-navy);     /* subtotal / âncora */
+  --chart-2: var(--cascata-gold);     /* margem */
+  --chart-3: var(--cascata-steel);    /* 3ª série */
+  --chart-4: var(--cascata-inflow);   /* entrada positiva */
+  --chart-5: var(--cascata-outflow);  /* saída / dedução */
+
+  --sidebar:                        var(--cascata-white);
+  --sidebar-foreground:             var(--cascata-ink);
+  --sidebar-primary:                var(--cascata-navy);
+  --sidebar-primary-foreground:     var(--cascata-white);
+  --sidebar-accent:                 var(--cascata-navy-soft);
+  --sidebar-accent-foreground:      var(--cascata-navy-deep);
+  --sidebar-border:                 var(--cascata-stone);
+  --sidebar-ring:                   var(--cascata-navy);
 }
 
 .dark {
-  --background: oklch(0.18 0.04 340);
-  --foreground: oklch(0.962 0.011 88);
-  --card: oklch(0.22 0.05 340);
-  --card-foreground: oklch(0.962 0.011 88);
-  --popover: oklch(0.22 0.05 340);
-  --popover-foreground: oklch(0.962 0.011 88);
-  --primary: oklch(0.74 0.14 85);
-  --primary-foreground: oklch(0.18 0.04 340);
-  --secondary: oklch(0.28 0.04 340);
-  --secondary-foreground: oklch(0.962 0.011 88);
-  --muted: oklch(0.28 0.04 340);
-  --muted-foreground: oklch(0.72 0.02 85);
-  --accent: oklch(0.28 0.04 340);
-  --accent-foreground: oklch(0.962 0.011 88);
-  --destructive: oklch(0.55 0.2 25);
-  --destructive-foreground: oklch(0.962 0.011 88);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.74 0.14 85);
+  --background:             #0A2A45;
+  --foreground:             #F5F8FB;
+  --card:                   #103C61;
+  --card-foreground:        #F5F8FB;
+  --popover:                #103C61;
+  --popover-foreground:     #F5F8FB;
+  --primary:                #4A7FA8;
+  --primary-foreground:     #06192B;
+  --secondary:              #0A2A45;
+  --secondary-foreground:   #D3DAE2;
+  --muted:                  #0A2A45;
+  --muted-foreground:       #D3DAE2;
+  --accent:                 #0A2A45;
+  --accent-foreground:      #F5F8FB;
+  --destructive:            #E04B5A;
+  --destructive-foreground: #06192B;
+  --border:                 oklch(1 0 0 / 10%);
+  --input:                  oklch(1 0 0 / 15%);
+  --ring:                   #4A7FA8;
 }
 
 @layer base {
@@ -166,7 +204,7 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.12  0 0 0 0 0.12  0 0 0 0 0.12  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.05  0 0 0 0 0.08  0 0 0 0 0.12  0 0 0 0.025 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
   }
   h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0.012em; }
 }
@@ -176,6 +214,6 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--color-muted-foreground);
+  color: var(--cascata-mute);
 }
 .hairline { border-top: 0.5px solid var(--color-border); }
