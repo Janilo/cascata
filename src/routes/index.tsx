@@ -65,33 +65,35 @@ function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 px-12 py-5 flex items-center justify-between border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-        <div className="flex items-center gap-3">
-          <Link to="/" aria-label="Cascata — início">
-            <CascataWordmark height={28} />
-          </Link>
-          <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="eyebrow">por J P Saraiva</a>
+      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+        <div className="mx-auto max-w-6xl px-6 md:px-10 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/" aria-label="Cascata — início">
+              <CascataWordmark height={28} />
+            </Link>
+            <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="eyebrow">por J P Saraiva</a>
+          </div>
+          <nav className="flex items-center gap-8 text-sm">
+            <Link to="/metodologia" className="text-foreground hover:text-primary uppercase tracking-[0.18em] text-xs font-semibold">
+              Metodologia
+            </Link>
+            <Link to="/login" className="text-foreground hover:text-primary uppercase tracking-[0.18em] text-xs font-semibold">
+              Entrar
+            </Link>
+            <Link
+              to="/signup"
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 uppercase tracking-[0.18em] text-xs font-semibold hover:bg-[var(--purple-deep)] transition-colors"
+            >
+              Criar conta <ArrowRight className="w-4 h-4" />
+            </Link>
+          </nav>
         </div>
-        <nav className="flex items-center gap-8 text-sm">
-          <Link to="/metodologia" className="text-foreground hover:text-primary uppercase tracking-[0.18em] text-xs font-semibold">
-            Metodologia
-          </Link>
-          <Link to="/login" className="text-foreground hover:text-primary uppercase tracking-[0.18em] text-xs font-semibold">
-            Entrar
-          </Link>
-          <Link
-            to="/signup"
-            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 uppercase tracking-[0.18em] text-xs font-semibold hover:bg-[var(--purple-deep)] transition-colors"
-          >
-            Criar conta <ArrowRight className="w-4 h-4" />
-          </Link>
-        </nav>
       </header>
 
       {/* Hero + Method */}
       <main className="flex-1">
-        <section className="px-12 py-24">
-          <div className="max-w-4xl">
+        <section className="py-24">
+          <div className="mx-auto max-w-5xl px-6 md:px-10">
             <p className="eyebrow mb-8">Cascata · Pricing · Waterfall</p>
             <h1
               className="font-display italic font-normal text-[color:var(--cascata-ink)] mb-10"
@@ -136,36 +138,40 @@ function LandingPage() {
         </section>
 
         {/* Method */}
-        <section className="border-t border-border px-12 py-20 bg-card/40">
-          <h2 className="eyebrow mb-12 font-normal">MÉTODO</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {[
-              { n: "01", title: "Defina os clientes e o organograma", body: "BU, departamentos, contas e clientes. Salários e custos da hierarquia entram como gasto, com rateio quando faltar valor." },
-              { n: "02", title: "Cada depto alimenta o seu", body: "Upload de arquivo (PDF, XLSX, CSV) por linha. A IA extrai os campos por cliente, P1 → P2 → P3 como fallback." },
-              { n: "03", title: "Waterfall com drill-down", body: "29 marcos do P&L. A linha 7 abre um segundo waterfall com as 33 sublinhas de desconto comercial — sem misturar." },
-            ].map((s) => (
-              <div key={s.n} className="border-t border-foreground/30 pt-6">
-                <div className="font-display text-4xl text-[var(--gold)] mb-6" style={{ fontVariationSettings: '"opsz" 96' }}>
-                  {s.n}
+        <section className="border-t border-border py-20 bg-card/40">
+          <div className="mx-auto max-w-5xl px-6 md:px-10">
+            <h2 className="eyebrow mb-12 font-normal">MÉTODO</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+              {[
+                { n: "01", title: "Defina os clientes e o organograma", body: "BU, departamentos, contas e clientes. Salários e custos da hierarquia entram como gasto, com rateio quando faltar valor." },
+                { n: "02", title: "Cada depto alimenta o seu", body: "Upload de arquivo (PDF, XLSX, CSV) por linha. A IA extrai os campos por cliente, P1 → P2 → P3 como fallback." },
+                { n: "03", title: "Waterfall com drill-down", body: "29 marcos do P&L. A linha 7 abre um segundo waterfall com as 33 sublinhas de desconto comercial — sem misturar." },
+              ].map((s) => (
+                <div key={s.n} className="border-t border-foreground/30 pt-6">
+                  <div className="font-display text-4xl text-[var(--gold)] mb-6" style={{ fontVariationSettings: '"opsz" 96' }}>
+                    {s.n}
+                  </div>
+                  <h3 className="font-display text-xl text-primary mb-3">{s.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{s.body}</p>
                 </div>
-                <h3 className="font-display text-xl text-primary mb-3">{s.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{s.body}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
       </main>
 
-      <footer className="px-12 border-t border-border text-xs text-muted-foreground">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-5 border-b border-border uppercase tracking-[0.18em]">
-          <span className="font-semibold">Outros produtos</span>
-          <a href="https://prisma.pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Prisma <span className="opacity-50">· Marketing Mix Modeling</span></a>
-          <a href="https://lente.pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Lente <span className="opacity-50">· Pesquisa Qualitativa</span></a>
-          <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">pereirasaraiva.com</a>
-        </div>
-        <div className="flex items-center justify-between py-5">
-          <span>Cascata · 2026</span>
-          <span className="uppercase tracking-[0.18em]">Price waterfall · IA · P&L por cliente</span>
+      <footer className="border-t border-border text-xs text-muted-foreground">
+        <div className="mx-auto max-w-6xl px-6 md:px-10">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-5 border-b border-border uppercase tracking-[0.18em]">
+            <span className="font-semibold">Outros produtos</span>
+            <a href="https://prisma.pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Prisma <span className="opacity-50">· Marketing Mix Modeling</span></a>
+            <a href="https://lente.pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Lente <span className="opacity-50">· Pesquisa Qualitativa</span></a>
+            <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">pereirasaraiva.com</a>
+          </div>
+          <div className="flex items-center justify-between py-5">
+            <span>Cascata · 2026</span>
+            <span className="uppercase tracking-[0.18em]">Price waterfall · IA · P&L por cliente</span>
+          </div>
         </div>
       </footer>
     </div>

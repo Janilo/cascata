@@ -21,25 +21,27 @@ function MetodologiaPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-40 px-12 py-5 flex items-center justify-between border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-        <Link to="/" className="flex items-baseline gap-3">
-          <span className="font-display text-3xl text-primary" style={{ fontVariationSettings: '"opsz" 144' }}>
-            Cascata
-          </span>
-          <span className="eyebrow">por J P Saraiva</span>
-        </Link>
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Voltar
-        </Link>
+      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+        <div className="mx-auto max-w-6xl px-6 md:px-10 py-5 flex items-center justify-between">
+          <Link to="/" className="flex items-baseline gap-3">
+            <span className="font-display text-3xl text-primary" style={{ fontVariationSettings: '"opsz" 144' }}>
+              Cascata
+            </span>
+            <span className="eyebrow">por J P Saraiva</span>
+          </Link>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
+          </Link>
+        </div>
       </header>
 
       {/* Content */}
-      <main className="flex-1 px-12 py-20">
-        <div className="max-w-3xl mx-auto">
+      <main className="flex-1 py-20">
+        <div className="mx-auto max-w-3xl px-6 md:px-10">
           <p className="eyebrow mb-8">METODOLOGIA</p>
           <h1 className="font-display text-5xl md:text-6xl text-primary leading-[1.05] mb-14">
             Como funciona o <em className="italic font-normal text-[var(--purple-deep)]">price waterfall</em> por cliente
@@ -116,10 +118,12 @@ function MetodologiaPage() {
         </div>
       </main>
 
-      <footer className="px-12 border-t border-border text-xs text-muted-foreground">
-        <div className="flex items-center justify-between py-5">
-          <span>Cascata · 2026</span>
-          <span className="uppercase tracking-[0.18em]">Price waterfall · IA · P&L por cliente</span>
+      <footer className="border-t border-border text-xs text-muted-foreground">
+        <div className="mx-auto max-w-6xl px-6 md:px-10">
+          <div className="flex items-center justify-between py-5">
+            <span>Cascata · 2026</span>
+            <span className="uppercase tracking-[0.18em]">Price waterfall · IA · P&L por cliente</span>
+          </div>
         </div>
       </footer>
     </div>
