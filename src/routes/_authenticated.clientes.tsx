@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Trash2, Upload, Loader2 } from "lucide-react";
 import { fileToText } from "@/lib/file-parse";
+import { useBusinessUnits } from "@/hooks/use-business-units";
 
 export const Route = createFileRoute("/_authenticated/clientes")({
   component: ClientsPage,
@@ -12,7 +13,9 @@ type Customer = { id: string; account_id: string | null; account_name: string | 
 
 function ClientsPage() {
   const [list, setList] = useState<Customer[]>([]);
-  const [form, setForm] = useState<Partial<Customer>>({ bu: "B2B" });
+  const { bus } = useBusinessUnits();
+  const defaultBu = bus[0]?.code ?? "B2B";
+  const [form, setForm] = useState<Partial<Customer>>({ bu: defaultBu });
   const [busy, setBusy] = useState(false);
 
   const reload = async () => {
@@ -25,9 +28,9 @@ function ClientsPage() {
     if (!form.customer_name) return;
     await supabase.from("customers").insert({
       customer_name: form.customer_name, account_id: form.account_id || null,
-      account_name: form.account_name || null, cnpj: form.cnpj || null, bu: form.bu || "B2B",
+      account_name: form.account_name || null, cnpj: form.cnpj || null, bu: form.bu || defaultBu,
     });
-    setForm({ bu: "B2B" });
+    setForm({ bu: defaultBu });
     reload();
   };
   const del = async (id: string) => { await supabase.from("customers").delete().eq("id", id); reload(); };
@@ -43,7 +46,7 @@ function ClientsPage() {
         if (!c.customer_name) continue;
         await supabase.from("customers").insert({
           customer_name: c.customer_name, account_id: c.account_id || null,
-          account_name: c.account_name || null, cnpj: c.cnpj || null, bu: c.bu || "B2B",
+          account_name: c.account_name || null, cnpj: c.cnpj || null, bu: c.bu || defaultBu,
         });
       }
       reload();
@@ -71,9 +74,9 @@ function ClientsPage() {
             className="border border-border bg-transparent px-3 py-2 text-sm" />
           <input placeholder="CNPJ" value={form.cnpj || ""} onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
             className="border border-border bg-transparent px-3 py-2 text-sm" />
-          <select value={form.bu || "B2B"} onChange={(e) => setForm({ ...form, bu: e.target.value })}
+          <select value={form.bu || defaultBu} onChange={(e) => setForm({ ...form, bu: e.target.value })}
             className="border border-border bg-transparent px-3 py-2 text-sm">
-            <option>B2B</option><option>B2C</option>
+            {bus.map(b => <option key={b.code} value={b.code}>{b.label}</option>)}
           </select>
           <button onClick={add} className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-xs uppercase tracking-[0.18em] font-semibold">
             <Plus className="w-4 h-4" /> Adicionar

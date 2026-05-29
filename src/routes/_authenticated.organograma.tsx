@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Trash2, ChevronRight, ChevronDown, Upload, Loader2 } from "lucide-react";
 import { fileToText } from "@/lib/file-parse";
+import { useBusinessUnits } from "@/hooks/use-business-units";
 
 export const Route = createFileRoute("/_authenticated/organograma")({
   component: OrgPage,
@@ -49,7 +50,9 @@ function OrgPage() {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [salaries, setSalaries] = useState<Record<string, number>>({});
   const [isAdmin, setIsAdmin] = useState(false);
-  const [form, setForm] = useState<Partial<Node> & { salary?: number }>({ bu: "B2B" });
+  const { bus } = useBusinessUnits();
+  const defaultBu = bus[0]?.code ?? "B2B";
+  const [form, setForm] = useState<Partial<Node> & { salary?: number }>({ bu: defaultBu });
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<"tree" | "table">("tree");
 
@@ -80,7 +83,7 @@ function OrgPage() {
     if (isAdmin && inserted && salary) {
       await supabase.from("org_node_salaries").insert({ org_node_id: inserted.id, salary });
     }
-    setForm({ bu: "B2B" });
+    setForm({ bu: defaultBu });
     reload();
   };
   const del = async (id: string) => {
@@ -105,7 +108,7 @@ function OrgPage() {
         const row = rows[r];
         if (!row.some((c) => c?.trim())) continue;
         inserts.push({
-          bu: iBu >= 0 ? row[iBu]?.trim() : "B2B",
+          bu: iBu >= 0 ? row[iBu]?.trim() : defaultBu,
           department: iDept >= 0 ? row[iDept]?.trim() : null,
           leader: iLead >= 0 ? row[iLead]?.trim() : null,
           channel: iCh >= 0 ? row[iCh]?.trim() : null,
@@ -162,8 +165,8 @@ function OrgPage() {
       <div className="bg-card border border-border p-6">
         <p className="eyebrow mb-4">NOVO NÓ</p>
         <div className="grid grid-cols-7 gap-3">
-          <select value={form.bu || "B2B"} onChange={(e) => setForm({ ...form, bu: e.target.value })} className="border border-border bg-transparent px-3 py-2 text-sm">
-            <option>B2B</option><option>B2C</option>
+          <select value={form.bu || defaultBu} onChange={(e) => setForm({ ...form, bu: e.target.value })} className="border border-border bg-transparent px-3 py-2 text-sm">
+            {bus.map(b => <option key={b.code} value={b.code}>{b.label}</option>)}
           </select>
           {(["department","leader","channel","account","customer"] as const).map(k => (
             <input key={k} placeholder={k} value={(form as Record<string, unknown>)[k] as string || ""} onChange={(e) => setForm({ ...form, [k]: e.target.value })}

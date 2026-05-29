@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, Loader2 } from "lucide-react";
 import { fileToText } from "@/lib/file-parse";
+import { useBusinessUnits } from "@/hooks/use-business-units";
 
 export const Route = createFileRoute("/_authenticated/inputs")({
   component: InputsPage,
@@ -31,7 +32,9 @@ function InputsPage() {
   const [lines, setLines] = useState<Line[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [inputs, setInputs] = useState<Array<{ line_code: string; customer_id: string; value: number | null; priority: string; department: string; ai_extraction: any }>>([]);
-  const [bu, setBu] = useState<"B2B"|"B2C">("B2B");
+  const { bus } = useBusinessUnits();
+  const [bu, setBu] = useState<string>("B2B");
+  useEffect(() => { if (bus.length && !bus.find(b => b.code === bu)) setBu(bus[0].code); }, [bus, bu]);
   const [busy, setBusy] = useState<string | null>(null);
   const [referenceMonth, setReferenceMonth] = useState<string>(() => {
     const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -160,9 +163,9 @@ function InputsPage() {
 
       <div className="flex flex-wrap items-end gap-4">
         <div className="inline-flex border border-border">
-          {(["B2B","B2C"] as const).map(b => (
-            <button key={b} onClick={() => setBu(b)}
-              className={`px-6 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${bu===b ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>{b}</button>
+          {bus.map(b => (
+            <button key={b.code} onClick={() => setBu(b.code)}
+              className={`px-6 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${bu===b.code ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>{b.label}</button>
           ))}
         </div>
         <div className="flex flex-col gap-1">

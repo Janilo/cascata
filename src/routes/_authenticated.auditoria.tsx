@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { History, Filter } from "lucide-react";
+import { useBusinessUnits } from "@/hooks/use-business-units";
 
 export const Route = createFileRoute("/_authenticated/auditoria")({
   beforeLoad: async () => {
@@ -35,6 +36,7 @@ const fmt = (n: number | null) =>
     : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(n);
 
 function AuditoriaPage() {
+  const { bus } = useBusinessUnits();
   const [rows, setRows] = useState<AuditRow[]>([]);
   const [users, setUsers] = useState<Map<string, string>>(new Map());
   const [customers, setCustomers] = useState<Map<string, string>>(new Map());
@@ -107,7 +109,8 @@ function AuditoriaPage() {
         <div className="flex flex-col gap-1">
           <span className="eyebrow text-[10px]">BU</span>
           <select value={fBu} onChange={(e) => setFBu(e.target.value)} className="bg-background border border-border px-3 py-2 text-sm">
-            <option value="">Todas</option><option value="B2B">B2B</option><option value="B2C">B2C</option>
+            <option value="">Todas</option>
+            {bus.map(b => <option key={b.code} value={b.code}>{b.label}</option>)}
           </select>
         </div>
         <div className="flex flex-col gap-1">

@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const PRIORITY_ORDER = ["P1", "P2", "P3", "MANUAL", "RATEIO"] as const;
 
 export type WaterfallArgs = {
-  bu: "B2B" | "B2C";
+  bu: string;
   department?: string;
   leader?: string;
   account?: string;

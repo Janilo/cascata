@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ShieldCheck, ShieldOff, Check, X } from "lucide-react";
+import { ShieldCheck, ShieldOff, Check, X, Plus, Trash2 } from "lucide-react";
 
 const DEPARTMENTS = [
   "CEO", "Comercial", "PS", "Produto", "Fiscal", "Financeiro",
@@ -27,12 +27,18 @@ type AuditRow = {
   changed_by: string | null; changed_at: string;
 };
 
+type BU = { code: string; label: string; sort_order: number };
+
 function AdminPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [audit, setAudit] = useState<AuditRow[]>([]);
   const [nameById, setNameById] = useState<Map<string, string>>(new Map());
+
+  const [bus, setBus] = useState<BU[]>([]);
+  const [newBuCode, setNewBuCode] = useState("");
+  const [newBuLabel, setNewBuLabel] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -55,9 +61,32 @@ function AdminPage() {
       .order("changed_at", { ascending: false })
       .limit(200);
     setAudit((a as AuditRow[]) || []);
+    const { data: b } = await supabase.from("business_units").select("code,label,sort_order").order("sort_order");
+    setBus((b as BU[]) || []);
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
+
+  const addBu = async () => {
+    const code = newBuCode.trim().toUpperCase();
+    const label = newBuLabel.trim() || code;
+    if (!code) return;
+    const nextOrder = (bus[bus.length - 1]?.sort_order ?? 0) + 10;
+    const { error } = await supabase.from("business_units").insert({ code, label, sort_order: nextOrder });
+    if (error) { alert(error.message); return; }
+    setNewBuCode(""); setNewBuLabel("");
+    load();
+  };
+  const renameBu = async (code: string, label: string) => {
+    await supabase.from("business_units").update({ label }).eq("code", code);
+    load();
+  };
+  const delBu = async (code: string) => {
+    if (!confirm(`Excluir BU "${code}"? Dados existentes em customers/line_inputs com este código não serão apagados, mas a BU some dos seletores.`)) return;
+    const { error } = await supabase.from("business_units").delete().eq("code", code);
+    if (error) { alert(error.message); return; }
+    load();
+  };
 
   const setRole = async (userId: string, role: "admin" | "member") => {
     await supabase.from("user_roles").delete().eq("user_id", userId);

@@ -6,7 +6,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { computeWaterfall } from "./waterfall-core";
 
 const Input = z.object({
-  bu: z.enum(["B2B", "B2C"]),
+  bu: z.string().min(1).max(64),
   department: z.string().optional(),
   leader: z.string().optional(),
   account: z.string().optional(),
@@ -37,7 +37,7 @@ export const getSharedWaterfall = createServerFn({ method: "POST" })
     if (new Date(link.expires_at).getTime() < Date.now()) throw new Error("Link expirado");
 
     const wf = await computeWaterfall({
-      bu: link.bu as "B2B" | "B2C",
+      bu: link.bu,
       referenceDate: link.reference_date || undefined,
     });
     return {
@@ -52,7 +52,7 @@ export const getSharedWaterfall = createServerFn({ method: "POST" })
   });
 
 const CreateShareInput = z.object({
-  bu: z.enum(["B2B", "B2C"]),
+  bu: z.string().min(1).max(64),
   referenceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   label: z.string().max(120).optional(),
   expiresInDays: z.number().int().min(1).max(90).default(14),
