@@ -55,7 +55,7 @@ function SignupPage() {
   return (
     <div className="min-h-screen flex">
       <aside className="hidden md:flex w-1/2 bg-primary text-primary-foreground p-16 flex-col justify-between" aria-hidden="true">
-        <Link to="/" className="font-display text-2xl">Cascata</Link>
+        <Link to="/" aria-label="Cascata" className="text-primary-foreground"><CascataWordmark height={28} className="!text-current" /></Link>
         <div>
           <p className="eyebrow !text-[var(--gold)] mb-6">CRIAR CONTA</p>
           <p className="font-display text-5xl italic leading-tight">
