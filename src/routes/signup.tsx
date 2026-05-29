@@ -5,6 +5,18 @@ import { lovable } from "@/integrations/lovable/index";
 
 export const Route = createFileRoute("/signup")({
   component: SignupPage,
+  head: () => ({
+    meta: [
+      { title: "Criar conta — Cascata" },
+      { name: "description", content: "Crie sua conta Cascata em 1 minuto. Cada departamento alimenta as linhas do waterfall que conhece, com aprovação por administrador." },
+      { property: "og:title", content: "Criar conta — Cascata" },
+      { property: "og:description", content: "Crie sua conta Cascata em 1 minuto e abra o price waterfall por cliente." },
+      { property: "og:url", content: "https://cascata.pereirasaraiva.com/signup" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://cascata.pereirasaraiva.com/signup" },
+    ],
+  }),
 });
 
 function SignupPage() {
@@ -41,17 +53,17 @@ function SignupPage() {
 
   return (
     <div className="min-h-screen flex">
-      <div className="hidden md:flex w-1/2 bg-primary text-primary-foreground p-16 flex-col justify-between">
+      <aside className="hidden md:flex w-1/2 bg-primary text-primary-foreground p-16 flex-col justify-between" aria-hidden="true">
         <Link to="/" className="font-display text-2xl">Cascata</Link>
         <div>
           <p className="eyebrow !text-[var(--gold)] mb-6">CRIAR CONTA</p>
-          <h2 className="font-display text-5xl italic leading-tight">
+          <p className="font-display text-5xl italic leading-tight">
             Cada departamento<br/>vê só o seu pedaço<br/>do waterfall.
-          </h2>
+          </p>
         </div>
         <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="text-xs uppercase tracking-[0.18em] opacity-60">por J P Saraiva</a>
-      </div>
-      <div className="flex-1 flex items-center justify-center p-12">
+      </aside>
+      <main className="flex-1 flex items-center justify-center p-12">
         <form onSubmit={onSubmit} className="w-full max-w-sm">
           <p className="eyebrow mb-6">NOVA CONTA</p>
           <h1 className="font-display text-4xl text-primary mb-10">Comece em 1 minuto.</h1>
@@ -75,7 +87,7 @@ function SignupPage() {
             Já tem conta? <Link to="/login" className="text-primary underline underline-offset-4">Entrar</Link>
           </p>
         </form>
-      </div>
+      </main>
     </div>
   );
 }

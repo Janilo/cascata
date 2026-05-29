@@ -1,0 +1,15 @@
+# Cascata
+
+> Navegador de Price Waterfall por cliente para operações B2B e B2C. Decompõe a receita até o custo de servir, com IA que lê os arquivos enviados pelos departamentos e monta o waterfall automaticamente.
+
+Cascata é uma ferramenta de pricing analítico criada por Pereira Saraiva. Cada departamento alimenta as linhas que conhece (PDF, XLSX, CSV); a IA extrai os campos por cliente e o price waterfall se monta com drill-down nos 33 tipos de desconto comercial e separação por unidade de negócio (BU).
+
+## Pages
+
+- [Cascata](/): Landing — visão geral, demonstração e cadastro.
+- [Metodologia](/metodologia): As 29 linhas do waterfall, os três níveis de precisão (P1, P2, P3) e o rateio de salário pelo organograma.
+
+## Optional
+
+- [Entrar](/login): Acesso para usuários cadastrados.
+- [Criar conta](/signup): Cadastro de nova conta (sujeito a aprovação).
