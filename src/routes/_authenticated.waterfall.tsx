@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Bar, BarChart, CartesianGrid, Cell, ComposedChart, LabelList, Line,
-  Tooltip, XAxis, YAxis,
+  ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { ChevronDown, ChevronUp, Upload, FileSpreadsheet, FileText, Share2, Copy, Check } from "lucide-react";
 import { getWaterfall, createSharedLink } from "@/lib/waterfall.functions";
@@ -29,6 +29,14 @@ const COMPARE = "__COMPARE__";
 
 type CustomerOpt = { id: string; customer_name: string; account_name: string | null; account_id: string | null; bu: string; attrs: Record<string, unknown> };
 
+type ChartRow = {
+  id: string; name: string; label: string;
+  itemKind: "group" | "sub" | "milestone" | "grouptotal";
+  bucket: "revenue" | "deduction" | "cost" | "total";
+  base: number; bar: number; delta: number; running: number;
+  groupKey?: string;
+};
+
 // P&L aggregate groups — codes map to waterfall_lines.code
 const PL_GROUPS = [
   { key: "rb",   label: "Receita Bruta",       shortLabel: "Rec. Bruta", codes: ["1","2","3","4","5"],        bucket: "revenue"   },
@@ -40,6 +48,26 @@ const PL_GROUPS = [
   { key: "eng",  label: "OpEx — Eng / Produto", shortLabel: "Eng/Prod",   codes: ["23","24","25"],             bucket: "cost"      },
   { key: "ga",   label: "OpEx — G&A",           shortLabel: "G&A",        codes: ["26","27","28","29"],        bucket: "cost"      },
 ] as const;
+
+// Chart sequence: P&L groups interspersed with milestone totals
+type PLGroupKey = typeof PL_GROUPS[number]["key"];
+const CHART_SEQUENCE: Array<
+  | { kind: "group"; key: PLGroupKey }
+  | { kind: "milestone"; id: string; label: string; fullLabel: string }
+> = [
+  { kind: "group", key: "rb" },
+  { kind: "group", key: "ded" },
+  { kind: "milestone", id: "rl",    label: "Rec. Líquida",  fullLabel: "Receita Líquida" },
+  { kind: "group", key: "cpvt" },
+  { kind: "group", key: "cpvo" },
+  { kind: "milestone", id: "mb",    label: "M. Bruta",      fullLabel: "Margem Bruta" },
+  { kind: "group", key: "sls" },
+  { kind: "group", key: "mkt" },
+  { kind: "milestone", id: "mc",    label: "M. Contrib.",   fullLabel: "Margem de Contribuição" },
+  { kind: "group", key: "eng" },
+  { kind: "group", key: "ga" },
+  { kind: "milestone", id: "ebitda",label: "EBITDA",        fullLabel: "EBITDA" },
+];
 
 // Values in DB may be stored as positive OR negative for non-revenue lines.
 // Normalize by treating the magnitude as the absolute value.
@@ -82,7 +110,6 @@ function WaterfallPage() {
   const referenceDate = `${referenceMonth}-01`;
   const callWaterfall = useServerFn(getWaterfall);
   const callCreateShare = useServerFn(createSharedLink);
-  const [viewMode, setViewMode] = useState<"aggregate" | "detail">("aggregate");
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [expandedSubCat, setExpandedSubCat] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -195,33 +222,60 @@ function WaterfallPage() {
   const mainLines = useMemo(() => lines.filter(l => l.kind === "main").sort((a,b) => (a.main_no||0)-(b.main_no||0)), [lines]);
   const subLines = useMemo(() => lines.filter(l => l.kind === "sub").sort((a,b) => (a.sub_no||0)-(b.sub_no||0)), [lines]);
 
-  const waterfallData = useMemo(() => {
+  const expandedChartData = useMemo((): ChartRow[] => {
     let running = 0;
-    return mainLines.map((l, idx) => {
-      const raw = adjustedTotals.get(l.code) || 0;
-      // Use magnitude for non-revenue lines; they may be stored positive or negative.
-      const val = l.bucket === "revenue" ? raw : Math.abs(raw);
-      const delta = l.bucket === "revenue" ? val : -val;
-      const base = delta >= 0 ? running : running + delta;
-      const bar = Math.abs(delta);
-      const prev = running;
-      running += delta;
-      return { idx, code: l.code, name: `#${l.code}`, label: l.label || "", bucket: l.bucket, base, bar, delta, running, prevRunning: prev };
-    });
-  }, [mainLines, adjustedTotals]);
+    const rows: ChartRow[] = [];
 
-  const aggregateChartData = useMemo(() => {
-    let running = 0;
-    return PL_GROUPS.map(g => {
-      const val = g.codes.reduce((s, code) => s + Math.abs(adjustedTotals.get(code) || 0), 0);
-      const delta = g.bucket === "revenue" ? val : -val;
-      const base = delta >= 0 ? running : running + delta;
-      const bar = Math.abs(delta);
-      const prev = running;
-      running += delta;
-      return { key: g.key, name: g.shortLabel, label: g.label, bucket: g.bucket, codes: [...g.codes], base, bar, delta, running, prevRunning: prev };
-    });
-  }, [adjustedTotals]);
+    for (const seq of CHART_SEQUENCE) {
+      if (seq.kind === "milestone") {
+        rows.push({
+          id: `ms-${seq.id}`, name: seq.label, label: seq.fullLabel,
+          itemKind: "milestone", bucket: "total",
+          base: Math.min(0, running), bar: Math.abs(running), delta: 0, running,
+        });
+      } else {
+        const g = PL_GROUPS.find(g => g.key === seq.key)!;
+        const gVal = g.codes.reduce((s, c) => s + Math.abs(adjustedTotals.get(c) || 0), 0);
+        const gDelta = g.bucket === "revenue" ? gVal : -gVal;
+
+        if (expandedGroup === seq.key) {
+          const groupStartRunning = running;
+          // Individual sub-line bars (lighter) — appear to the LEFT of the group total
+          for (const code of g.codes) {
+            const lVal = Math.abs(adjustedTotals.get(code) || 0);
+            const lDelta = g.bucket === "revenue" ? lVal : -lVal;
+            const lBase = lDelta >= 0 ? running : running + lDelta;
+            const lineLine = mainLines.find(l => l.code === code);
+            rows.push({
+              id: `sub-${code}`, name: `#${code}`, label: lineLine?.label || `#${code}`,
+              itemKind: "sub", bucket: g.bucket,
+              base: lBase, bar: lVal, delta: lDelta, running: running + lDelta,
+              groupKey: seq.key,
+            });
+            running += lDelta;
+          }
+          // Group total bar (darker, same visual position as unexpanded bar, delta=0)
+          const gtBase = gDelta >= 0 ? groupStartRunning : groupStartRunning + gDelta;
+          rows.push({
+            id: `gt-${seq.key}`, name: g.shortLabel, label: g.label,
+            itemKind: "grouptotal", bucket: g.bucket,
+            base: gtBase, bar: Math.abs(gDelta), delta: 0, running,
+            groupKey: seq.key,
+          });
+        } else {
+          const base = gDelta >= 0 ? running : running + gDelta;
+          rows.push({
+            id: `g-${seq.key}`, name: g.shortLabel, label: g.label,
+            itemKind: "group", bucket: g.bucket,
+            base, bar: Math.abs(gDelta), delta: gDelta, running: running + gDelta,
+            groupKey: seq.key,
+          });
+          running += gDelta;
+        }
+      }
+    }
+    return rows;
+  }, [adjustedTotals, expandedGroup, mainLines]);
 
   const baselineKpis = useMemo(() => kpisFor(activeTotals), [activeTotals]);
   const kpis = useMemo(() => kpisFor(adjustedTotals), [adjustedTotals]);
@@ -254,7 +308,8 @@ function WaterfallPage() {
 
   const colorFor = (bucket: string) =>
     bucket === "revenue" ? "var(--marine)" :
-    bucket === "deduction" ? "var(--primary)" : "var(--green)";
+    bucket === "deduction" ? "var(--primary)" :
+    bucket === "total" ? "var(--gold)" : "var(--green)";
 
   // ====== Exports ======
   const exportExcel = () => {
@@ -461,126 +516,66 @@ function WaterfallPage() {
           <div className="bg-card border border-border">
             <div className="px-8 py-5 border-b border-border flex items-center justify-between flex-wrap gap-3">
               <h2 className="font-display text-xl text-primary">Waterfall principal — {labelOf(mode)}</h2>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground uppercase tracking-[0.18em] hidden sm:inline">Receita → Deduções → Custos</span>
-                <div className="inline-flex border border-border">
-                  <button onClick={() => setViewMode("aggregate")}
-                    className={`px-4 py-1.5 text-xs uppercase tracking-[0.14em] font-semibold ${viewMode === "aggregate" ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}>
-                    P&L
-                  </button>
-                  <button onClick={() => setViewMode("detail")}
-                    className={`px-4 py-1.5 text-xs uppercase tracking-[0.14em] font-semibold ${viewMode === "detail" ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}>
-                    Detalhado
-                  </button>
-                </div>
+              <span className="text-xs text-muted-foreground uppercase tracking-[0.18em] hidden sm:inline">
+                Receita → Deduções → Custos → EBITDA · Clique num grupo para detalhar
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <div style={{ minWidth: Math.max(900, expandedChartData.length * 90) }}>
+                <ComposedChart width={Math.max(900, expandedChartData.length * 90)} height={480}
+                  data={expandedChartData} margin={{ top: 36, right: 40, left: 40, bottom: 60 }}>
+                  <CartesianGrid stroke="var(--stone)" strokeDasharray="2 4" vertical={false} />
+                  <XAxis dataKey="name" stroke="var(--soft)"
+                    tick={{ fontSize: 10 }} interval={0} angle={-38} textAnchor="end" height={70} />
+                  <YAxis stroke="var(--soft)" tick={{ fontSize: 11 }} tickFormatter={(v: number) => fmtShort(v)} />
+                  <Tooltip
+                    cursor={{ fill: "var(--secondary)", opacity: 0.4 }}
+                    contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 0, fontSize: 12 }}
+                    formatter={(_value: unknown, _name: unknown, props: { payload?: ChartRow }) => {
+                      const row = props.payload;
+                      if (!row) return ["—", ""];
+                      if (row.itemKind === "milestone") return [fmt(row.running), row.label];
+                      if (row.itemKind === "grouptotal") return [`${fmt(row.bar)}  ·  acum. ${fmt(row.running)}`, row.label];
+                      return [`${fmt(row.bar)}  ·  acum. ${fmt(row.running)}`, row.label];
+                    }}
+                  />
+                  <Bar dataKey="base" stackId="a" fill="transparent" isAnimationActive={false} />
+                  <Bar dataKey="bar" stackId="a" isAnimationActive={false}>
+                    {expandedChartData.map((d) => {
+                      const isMilestone = d.itemKind === "milestone" || d.itemKind === "grouptotal";
+                      const fill = isMilestone ? colorFor("total") : colorFor(d.bucket);
+                      const opacity = d.itemKind === "sub" ? 0.42 : 1;
+                      const cursor = d.itemKind === "group" || d.itemKind === "grouptotal" ? "pointer" : "default";
+                      return (
+                        <Cell key={d.id} fill={fill} style={{ opacity, cursor }}
+                          onClick={() => {
+                            if (d.itemKind === "group") setExpandedGroup(g => g === d.groupKey ? null : (d.groupKey ?? null));
+                            if (d.itemKind === "grouptotal") setExpandedGroup(null);
+                          }} />
+                      );
+                    })}
+                    <LabelList dataKey="bar" position="top"
+                      formatter={(v: unknown) => { const n = Number(v); return n < 5000 ? "" : fmtShort(n); }}
+                      style={{ fontSize: 10, fill: "var(--ink)" }} />
+                  </Bar>
+                  <Line type="stepAfter" dataKey="running" stroke="var(--gold)" strokeWidth={1.5}
+                    dot={{ r: 2, fill: "var(--gold)", stroke: "var(--gold)" }} isAnimationActive={false} />
+                </ComposedChart>
               </div>
             </div>
-            {viewMode === "aggregate" ? (
-              <>
-                <div className="overflow-x-auto">
-                  <div style={{ minWidth: Math.max(700, aggregateChartData.length * 90) }}>
-                    <ComposedChart width={Math.max(700, aggregateChartData.length * 90)} height={420}
-                      data={aggregateChartData} margin={{ top: 36, right: 40, left: 40, bottom: 30 }}>
-                      <CartesianGrid stroke="var(--stone)" strokeDasharray="2 4" vertical={false} />
-                      <XAxis dataKey="name" stroke="var(--soft)" tick={{ fontSize: 11 }} />
-                      <YAxis stroke="var(--soft)" tick={{ fontSize: 11 }} tickFormatter={(v: number) => fmtShort(v)} />
-                      <Tooltip
-                        cursor={{ fill: "var(--secondary)", opacity: 0.4 }}
-                        contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 0, fontSize: 12 }}
-                        formatter={(value: unknown, _name: unknown, props: { payload?: { delta?: number; label?: string; running?: number } }) => [
-                          `${fmt(Math.abs(Number(props.payload?.delta ?? value)))}  ·  acum. ${fmt(props.payload?.running ?? 0)}`,
-                          props.payload?.label || "",
-                        ]}
-                      />
-                      <Bar dataKey="base" stackId="a" fill="transparent" isAnimationActive={false} />
-                      <Bar dataKey="bar" stackId="a" isAnimationActive={false}>
-                        {aggregateChartData.map((d) => (
-                          <Cell key={d.key} fill={colorFor(d.bucket)}
-                            onClick={() => setExpandedGroup(g => g === d.key ? null : d.key)}
-                            style={{ cursor: "pointer", opacity: expandedGroup === d.key ? 0.75 : 1 }} />
-                        ))}
-                        <LabelList dataKey="delta" position="top"
-                          formatter={(v: unknown) => fmtShort(Math.abs(Number(v)))}
-                          style={{ fontSize: 11, fill: "var(--ink)" }} />
-                      </Bar>
-                      <Line type="stepAfter" dataKey="running" stroke="var(--gold)" strokeWidth={1.5}
-                        dot={{ r: 3, fill: "var(--gold)", stroke: "var(--gold)" }} isAnimationActive={false} />
-                    </ComposedChart>
-                  </div>
-                </div>
-                {expandedGroup && (() => {
-                  const g = PL_GROUPS.find(g => g.key === expandedGroup);
-                  if (!g) return null;
-                  const gLines = mainLines.filter(l => (g.codes as readonly string[]).includes(l.code));
-                  return (
-                    <div className="border-t border-border bg-secondary/20">
-                      <div className="px-8 py-3 flex items-center justify-between border-b border-border">
-                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">{g.label} — linhas individuais</p>
-                        <button onClick={() => setExpandedGroup(null)} className="text-xs text-muted-foreground hover:text-foreground uppercase tracking-[0.14em]">Fechar ×</button>
-                      </div>
-                      <table className="w-full text-sm">
-                        <tbody>
-                          {gLines.map(l => (
-                            <tr key={l.code} className="border-t border-border/60">
-                              <td className="px-8 py-2 font-mono text-xs text-muted-foreground w-12">#{l.code}</td>
-                              <td className="px-3 py-2 text-xs text-muted-foreground w-32">{l.category}</td>
-                              <td className="px-3 py-2">{l.label}</td>
-                              <td className="px-3 py-2 text-xs text-muted-foreground">{l.department || "—"}</td>
-                              <td className="px-8 py-2 text-right font-mono">{fmt(Math.abs(adjustedTotals.get(l.code) || 0))}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  );
-                })()}
-                <div className="px-8 py-3 border-t border-border text-xs text-muted-foreground bg-secondary/40">
-                  Clique numa barra para ver as linhas individuais do grupo · Alterne para "Detalhado" para ver todas as 29 linhas
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="overflow-x-auto">
-                  <div style={{ minWidth: Math.max(900, waterfallData.length * 55) }}>
-                    <ComposedChart width={Math.max(900, waterfallData.length * 55)} height={520}
-                      data={waterfallData} margin={{ top: 36, right: 30, left: 30, bottom: 30 }}>
-                      <CartesianGrid stroke="var(--stone)" strokeDasharray="2 4" vertical={false} />
-                      <XAxis dataKey="name" stroke="var(--soft)" tick={{ fontSize: 11 }} />
-                      <YAxis stroke="var(--soft)" tick={{ fontSize: 11 }} tickFormatter={(v: number) => fmtShort(v)} />
-                      <Tooltip
-                        cursor={{ fill: "var(--secondary)", opacity: 0.4 }}
-                        contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 0, fontSize: 12 }}
-                        formatter={(value: unknown, _name: unknown, props: { payload?: { delta?: number; label?: string; running?: number } }) => [
-                          `${fmt(Math.abs(Number(props.payload?.delta ?? value)))}  ·  acum. ${fmt(props.payload?.running ?? 0)}`,
-                          props.payload?.label || "",
-                        ]}
-                      />
-                      <Bar dataKey="base" stackId="a" fill="transparent" isAnimationActive={false} />
-                      <Bar dataKey="bar" stackId="a" isAnimationActive={false}>
-                        {waterfallData.map((d) => (
-                          <Cell key={d.code} fill={colorFor(d.bucket)}
-                            onClick={() => { if (d.code === "7") setShowSub((v) => !v); }}
-                            style={{ cursor: d.code === "7" ? "pointer" : "default" }} />
-                        ))}
-                        <LabelList dataKey="delta" position="top"
-                          formatter={(v: unknown) => fmtShort(Math.abs(Number(v)))}
-                          style={{ fontSize: 10, fill: "var(--ink)" }} />
-                      </Bar>
-                      <Line type="stepAfter" dataKey="running" stroke="var(--gold)" strokeWidth={1.5}
-                        dot={{ r: 2, fill: "var(--gold)", stroke: "var(--gold)" }} isAnimationActive={false} />
-                    </ComposedChart>
-                  </div>
-                </div>
-                <div className="px-8 py-4 border-t border-border flex items-center justify-between bg-secondary/40">
-                  <button onClick={() => setShowSub(v => !v)}
-                    className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] font-semibold text-primary">
-                    {showSub ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    Linha #7 — Descontos comerciais (sublinhas 7.1–7.33)
-                  </button>
-                  <span className="text-xs text-muted-foreground">Clique também na barra #7 do gráfico</span>
-                </div>
-              </>
-            )}
+            <div className="px-8 py-4 border-t border-border flex items-center justify-between bg-secondary/40">
+              <button onClick={() => setShowSub(v => !v)}
+                className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] font-semibold text-primary">
+                {showSub ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                Linha #7 — Descontos comerciais (sublinhas 7.1–7.33)
+              </button>
+              {expandedGroup && (
+                <button onClick={() => setExpandedGroup(null)}
+                  className="text-xs text-muted-foreground hover:text-foreground uppercase tracking-[0.14em]">
+                  Fechar detalhe ×
+                </button>
+              )}
+            </div>
           </div>
 
           {showSub && (
