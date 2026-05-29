@@ -10,6 +10,35 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "Cascata — Price Waterfall por cliente" },
       { name: "description", content: "Decompõe receita até o custo de servir. Cada departamento alimenta o seu, a IA lê os arquivos e o waterfall se monta sozinho." },
+      { property: "og:title", content: "Cascata — Price Waterfall por cliente" },
+      { property: "og:description", content: "Decompõe receita até o custo de servir. Cada departamento alimenta o seu, a IA lê os arquivos e o waterfall se monta sozinho." },
+      { property: "og:url", content: "https://cascata.pereirasaraiva.com/" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://cascata.pereirasaraiva.com/" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Cascata",
+          url: "https://cascata.pereirasaraiva.com/",
+          description: "Navegador de Price Waterfall por cliente para operações B2B e B2C.",
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Pereira Saraiva",
+          url: "https://pereirasaraiva.com",
+          brand: { "@type": "Brand", name: "Cascata" },
+          sameAs: ["https://cascata.pereirasaraiva.com/"],
+        }),
+      },
     ],
   }),
 });
