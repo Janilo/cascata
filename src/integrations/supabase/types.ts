@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_units: {
+        Row: {
+          code: string
+          created_at: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           account_id: string | null
