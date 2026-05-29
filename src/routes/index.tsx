@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { ArrowRight, Eye } from "lucide-react";
 import { useState } from "react";
 import { CascataWordmark } from "@/components/brand/CascataWordmark";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { enterAsGuestFn } from "@/lib/auth.functions";
 
 export const Route = createFileRoute("/")({
   component: LandingPage,
@@ -47,19 +49,21 @@ export const Route = createFileRoute("/")({
 function LandingPage() {
   const navigate = useNavigate();
   const [loadingGuest, setLoadingGuest] = useState(false);
+  const enterAsGuest = useServerFn(enterAsGuestFn);
 
-  const enterAsGuest = async () => {
+  const handleGuestEntry = async () => {
     setLoadingGuest(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: "convidado@cascata.app",
-      password: "cascata-demo-2026",
-    });
-    if (error) {
-      toast.error("Não foi possível entrar como convidado", { description: error.message });
+    try {
+      const session = await enterAsGuest();
+      const { error } = await supabase.auth.setSession(session);
+      if (error) throw error;
+      navigate({ to: "/waterfall" });
+    } catch (e) {
+      toast.error("Não foi possível entrar como convidado", {
+        description: e instanceof Error ? e.message : undefined,
+      });
       setLoadingGuest(false);
-      return;
     }
-    navigate({ to: "/waterfall" });
   };
 
   return (
@@ -119,7 +123,7 @@ function LandingPage() {
               </Link>
               <button
                 type="button"
-                onClick={enterAsGuest}
+                onClick={handleGuestEntry}
                 disabled={loadingGuest}
                 className="inline-flex items-center gap-2 border border-primary text-primary px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50"
               >
