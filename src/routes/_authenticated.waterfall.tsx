@@ -45,6 +45,13 @@ function WaterfallPage() {
   });
   const referenceDate = `${referenceMonth}-01`;
   const callWaterfall = useServerFn(getWaterfall);
+  const callCreateShare = useServerFn(createSharedLink);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareLabel, setShareLabel] = useState("");
+  const [shareDays, setShareDays] = useState(14);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     (async () => {
