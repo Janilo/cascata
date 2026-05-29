@@ -49,8 +49,20 @@ function InputsPage() {
     })();
   }, []);
 
-  const myLines = useMemo(() => lines.filter(l => l.department === dept), [lines, dept]);
+  const myMainLines = useMemo(() => lines.filter(l => l.kind === "main" && l.department === dept), [lines, dept]);
+  const subsByMain = useMemo(() => {
+    const m = new Map<number, Line[]>();
+    for (const l of lines) {
+      if (l.kind !== "sub" || l.department !== dept || l.main_no == null) continue;
+      const arr = m.get(l.main_no) || [];
+      arr.push(l);
+      m.set(l.main_no, arr);
+    }
+    return m;
+  }, [lines, dept]);
+  const myLines = myMainLines;
   const buCustomers = useMemo(() => customers.filter(c => c.bu === bu), [customers, bu]);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   // Progress bars
   const myTotal = myLines.length * buCustomers.length;
