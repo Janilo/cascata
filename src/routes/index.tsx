@@ -15,6 +15,23 @@ export const Route = createFileRoute("/")({
 });
 
 function LandingPage() {
+  const navigate = useNavigate();
+  const [loadingGuest, setLoadingGuest] = useState(false);
+
+  const enterAsGuest = async () => {
+    setLoadingGuest(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: "convidado@cascata.app",
+      password: "cascata-demo-2026",
+    });
+    if (error) {
+      toast.error("Não foi possível entrar como convidado", { description: error.message });
+      setLoadingGuest(false);
+      return;
+    }
+    navigate({ to: "/waterfall" });
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
