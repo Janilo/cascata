@@ -39,6 +39,7 @@ function WaterfallPage() {
   const [filterLeader, setFilterLeader] = useState<string>("");
   const [filterAccount, setFilterAccount] = useState<string>("");
   const [filterCustomer, setFilterCustomer] = useState<string>("");
+  const [multipliers, setMultipliers] = useState<Record<string, number>>({ "6": 1, "7": 1, "8": 1 });
   const callWaterfall = useServerFn(getWaterfall);
 
   useEffect(() => {
