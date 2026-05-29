@@ -10,6 +10,15 @@ export const Route = createFileRoute("/_authenticated")({
     if (error || !data.user) {
       throw redirect({ to: "/login", search: { redirect: location.href } });
     }
+    // Check approval status (admins bypass)
+    const [{ data: profile }, { data: roles }] = await Promise.all([
+      supabase.from("profiles").select("is_approved").eq("id", data.user.id).maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", data.user.id),
+    ]);
+    const isAdmin = (roles || []).some((r) => r.role === "admin");
+    if (!isAdmin && !profile?.is_approved) {
+      throw redirect({ to: "/aguardando-aprovacao" });
+    }
   },
   component: AuthLayout,
 });
