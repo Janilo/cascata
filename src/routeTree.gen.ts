@@ -20,6 +20,7 @@ import { Route as AuthenticatedWaterfallRouteImport } from './routes/_authentica
 import { Route as AuthenticatedOrganogramaRouteImport } from './routes/_authenticated.organograma'
 import { Route as AuthenticatedInputsRouteImport } from './routes/_authenticated.inputs'
 import { Route as AuthenticatedCustoDeServirRouteImport } from './routes/_authenticated.custo-de-servir'
+import { Route as AuthenticatedComparativoRouteImport } from './routes/_authenticated.comparativo'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated.clientes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 
@@ -79,6 +80,12 @@ const AuthenticatedCustoDeServirRoute =
     path: '/custo-de-servir',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedComparativoRoute =
+  AuthenticatedComparativoRouteImport.update({
+    id: '/comparativo',
+    path: '/comparativo',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedClientesRoute = AuthenticatedClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
@@ -98,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/clientes': typeof AuthenticatedClientesRoute
+  '/comparativo': typeof AuthenticatedComparativoRoute
   '/custo-de-servir': typeof AuthenticatedCustoDeServirRoute
   '/inputs': typeof AuthenticatedInputsRoute
   '/organograma': typeof AuthenticatedOrganogramaRoute
@@ -112,6 +120,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/clientes': typeof AuthenticatedClientesRoute
+  '/comparativo': typeof AuthenticatedComparativoRoute
   '/custo-de-servir': typeof AuthenticatedCustoDeServirRoute
   '/inputs': typeof AuthenticatedInputsRoute
   '/organograma': typeof AuthenticatedOrganogramaRoute
@@ -128,6 +137,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/clientes': typeof AuthenticatedClientesRoute
+  '/_authenticated/comparativo': typeof AuthenticatedComparativoRoute
   '/_authenticated/custo-de-servir': typeof AuthenticatedCustoDeServirRoute
   '/_authenticated/inputs': typeof AuthenticatedInputsRoute
   '/_authenticated/organograma': typeof AuthenticatedOrganogramaRoute
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/clientes'
+    | '/comparativo'
     | '/custo-de-servir'
     | '/inputs'
     | '/organograma'
@@ -158,6 +169,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/clientes'
+    | '/comparativo'
     | '/custo-de-servir'
     | '/inputs'
     | '/organograma'
@@ -173,6 +185,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_authenticated/admin'
     | '/_authenticated/clientes'
+    | '/_authenticated/comparativo'
     | '/_authenticated/custo-de-servir'
     | '/_authenticated/inputs'
     | '/_authenticated/organograma'
@@ -269,6 +282,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCustoDeServirRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/comparativo': {
+      id: '/_authenticated/comparativo'
+      path: '/comparativo'
+      fullPath: '/comparativo'
+      preLoaderRoute: typeof AuthenticatedComparativoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/clientes': {
       id: '/_authenticated/clientes'
       path: '/clientes'
@@ -289,6 +309,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedClientesRoute: typeof AuthenticatedClientesRoute
+  AuthenticatedComparativoRoute: typeof AuthenticatedComparativoRoute
   AuthenticatedCustoDeServirRoute: typeof AuthenticatedCustoDeServirRoute
   AuthenticatedInputsRoute: typeof AuthenticatedInputsRoute
   AuthenticatedOrganogramaRoute: typeof AuthenticatedOrganogramaRoute
@@ -298,6 +319,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedClientesRoute: AuthenticatedClientesRoute,
+  AuthenticatedComparativoRoute: AuthenticatedComparativoRoute,
   AuthenticatedCustoDeServirRoute: AuthenticatedCustoDeServirRoute,
   AuthenticatedInputsRoute: AuthenticatedInputsRoute,
   AuthenticatedOrganogramaRoute: AuthenticatedOrganogramaRoute,
@@ -320,3 +342,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
