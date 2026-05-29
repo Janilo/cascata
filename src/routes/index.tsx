@@ -101,7 +101,7 @@ function LandingPage() {
                 maxWidth: "20ch",
               }}
             >
-              Da receita bruta <em className="not-italic font-normal text-[color:var(--cascata-navy)] italic">ao custo de servir</em>, cliente a cliente.
+              Da receita bruta <em className="font-normal text-[color:var(--cascata-navy)]">ao custo de servir</em>, cliente a cliente.
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mb-12">
               Cada departamento alimenta as linhas que conhece. A IA lê os arquivos enviados, identifica os campos por cliente, e o price waterfall se monta — com drill-down nos 33 tipos de desconto comercial e separação por BU.
