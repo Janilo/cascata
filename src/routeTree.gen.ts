@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AguardandoAprovacaoRouteImport } from './routes/aguardando-aprovacao'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedWaterfallRouteImport } from './routes/_authenticated.waterfall'
 import { Route as AuthenticatedOrganogramaRouteImport } from './routes/_authenticated.organograma'
 import { Route as AuthenticatedInputsRouteImport } from './routes/_authenticated.inputs'
@@ -49,6 +50,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedWaterfallRoute = AuthenticatedWaterfallRouteImport.update({
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/inputs': typeof AuthenticatedInputsRoute
   '/organograma': typeof AuthenticatedOrganogramaRoute
   '/waterfall': typeof AuthenticatedWaterfallRoute
+  '/share/$token': typeof ShareTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/inputs': typeof AuthenticatedInputsRoute
   '/organograma': typeof AuthenticatedOrganogramaRoute
   '/waterfall': typeof AuthenticatedWaterfallRoute
+  '/share/$token': typeof ShareTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/_authenticated/inputs': typeof AuthenticatedInputsRoute
   '/_authenticated/organograma': typeof AuthenticatedOrganogramaRoute
   '/_authenticated/waterfall': typeof AuthenticatedWaterfallRoute
+  '/share/$token': typeof ShareTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
     | '/inputs'
     | '/organograma'
     | '/waterfall'
+    | '/share/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -152,6 +162,7 @@ export interface FileRouteTypes {
     | '/inputs'
     | '/organograma'
     | '/waterfall'
+    | '/share/$token'
   id:
     | '__root__'
     | '/'
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inputs'
     | '/_authenticated/organograma'
     | '/_authenticated/waterfall'
+    | '/share/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -175,6 +187,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MetodologiaRoute: typeof MetodologiaRoute
   SignupRoute: typeof SignupRoute
+  ShareTokenRoute: typeof ShareTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -219,6 +232,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/waterfall': {
@@ -295,6 +315,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MetodologiaRoute: MetodologiaRoute,
   SignupRoute: SignupRoute,
+  ShareTokenRoute: ShareTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

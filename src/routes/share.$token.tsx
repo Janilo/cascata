@@ -114,7 +114,7 @@ function SharedWaterfallPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" />
               <YAxis tickFormatter={(v) => compact(Number(v))} tick={{ fontSize: 10 }} />
-              <Tooltip formatter={(v: number) => brl(Number(v))} labelFormatter={(_, p) => p?.[0]?.payload?.label || ""} />
+              <Tooltip formatter={(v) => brl(Number(v))} labelFormatter={(_, p) => p?.[0]?.payload?.label || ""} />
               <Bar dataKey="base" stackId="a" fill="transparent" />
               <Bar dataKey="bar" stackId="a">
                 {bars.map((b, i) => <Cell key={i} fill={colorFor(b.bucket)} />)}
