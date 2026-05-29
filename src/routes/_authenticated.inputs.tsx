@@ -44,7 +44,7 @@ function InputsPage() {
       setLines((ls as Line[]) || []);
       const { data: cs } = await supabase.from("customers").select("id,customer_name,bu").order("customer_name");
       setCustomers((cs as Customer[]) || []);
-      const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department");
+      const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department,ai_extraction");
       setInputs(ins || []);
     })();
   }, []);
@@ -95,7 +95,7 @@ function InputsPage() {
       line_code, customer_id, bu, department: dept, value, priority,
     }, { onConflict: "line_code,customer_id,bu" });
     if (!error) {
-      const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department");
+      const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department,ai_extraction");
       setInputs(ins || []);
     }
     setBusy(null);
@@ -122,7 +122,7 @@ function InputsPage() {
         value: m.value, priority: "P1", file_path: path, ai_extraction: m,
       }, { onConflict: "line_code,customer_id,bu" });
     }
-    const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department");
+    const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department,ai_extraction");
     setInputs(ins || []);
     setBusy(null);
   };
