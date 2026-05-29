@@ -6,8 +6,8 @@ import {
   Bar, BarChart, CartesianGrid, Cell, ComposedChart, LabelList, Line,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { ChevronDown, ChevronUp, Upload, FileSpreadsheet, FileText } from "lucide-react";
-import { getWaterfall } from "@/lib/waterfall.functions";
+import { ChevronDown, ChevronUp, Upload, FileSpreadsheet, FileText, Share2, Copy, Check } from "lucide-react";
+import { getWaterfall, createSharedLink } from "@/lib/waterfall.functions";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
