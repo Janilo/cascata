@@ -341,20 +341,39 @@ function WaterfallPage() {
         <>
           <div className="grid grid-cols-5 gap-px bg-border">
             {[
-              { label: "Receita Bruta", v: kpis.grossRevenue },
-              { label: "Deduções", v: -kpis.deductions },
-              { label: "Receita Líquida", v: kpis.netRevenue },
-              { label: "Margem Bruta", v: kpis.grossMargin },
-              { label: "Pocket Margin", v: kpis.pocket, highlight: true },
-            ].map((k) => (
-              <div key={k.label} className="bg-card p-6">
-                <p className="eyebrow">{k.label}</p>
-                <p className={`font-display text-3xl mt-3 ${k.highlight ? "text-[var(--gold)]" : "text-primary"}`}>
-                  {fmt(k.v)}
-                </p>
-              </div>
-            ))}
+              { label: "Receita Bruta", v: kpis.grossRevenue, base: baselineKpis.grossRevenue },
+              { label: "Deduções", v: -kpis.deductions, base: -baselineKpis.deductions },
+              { label: "Receita Líquida", v: kpis.netRevenue, base: baselineKpis.netRevenue },
+              { label: "Margem Bruta", v: kpis.grossMargin, base: baselineKpis.grossMargin },
+              { label: "Pocket Margin", v: kpis.pocket, base: baselineKpis.pocket, highlight: true },
+            ].map((k) => {
+              const d = k.v - k.base;
+              const pct = k.base !== 0 ? (d / Math.abs(k.base)) * 100 : 0;
+              return (
+                <div key={k.label} className="bg-card p-6">
+                  <p className="eyebrow">{k.label}</p>
+                  <p className={`font-display text-3xl mt-3 ${k.highlight ? "text-[var(--gold)]" : "text-primary"}`}>
+                    {fmt(k.v)}
+                  </p>
+                  {isAdjusted && Math.abs(d) > 0.5 && (
+                    <p className={`mt-2 text-xs font-mono ${d >= 0 ? "text-[hsl(var(--cascata-inflow))]" : "text-[hsl(var(--cascata-outflow))]"}`}>
+                      {d >= 0 ? "▲" : "▼"} {fmtShort(d)} ({pct >= 0 ? "+" : ""}{pct.toFixed(1)}%)
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
+
+          <SensitivityPanel
+            mainLines={mainLines}
+            baseTotals={activeTotals}
+            multipliers={multipliers}
+            setMultipliers={setMultipliers}
+            isAdjusted={isAdjusted}
+            pocketDelta={kpis.pocket - baselineKpis.pocket}
+          />
+
 
           <div className="bg-card border border-border">
             <div className="px-8 py-5 border-b border-border flex items-center justify-between">
