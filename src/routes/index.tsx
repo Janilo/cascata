@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Eye } from "lucide-react";
 import { useState } from "react";
+import { CascataWordmark } from "@/components/brand/CascataWordmark";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
