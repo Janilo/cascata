@@ -39,6 +39,7 @@ function WaterfallPage() {
   const [filterLeader, setFilterLeader] = useState<string>("");
   const [filterAccount, setFilterAccount] = useState<string>("");
   const [filterCustomer, setFilterCustomer] = useState<string>("");
+  const [multipliers, setMultipliers] = useState<Record<string, number>>({ "6": 1, "7": 1, "8": 1 });
   const callWaterfall = useServerFn(getWaterfall);
 
   useEffect(() => {
@@ -132,13 +133,23 @@ function WaterfallPage() {
   const activeTotals = mode === "B2C" ? totalsB2C : totalsB2B;
   const activeSub = mode === "B2C" ? subTotalsB2C : subTotalsB2B;
 
+  // Apply sensitivity multipliers to deduction lines (6, 7, 8)
+  const adjustedTotals = useMemo(() => {
+    const m = new Map(activeTotals);
+    for (const code of ["6", "7", "8"]) {
+      const mult = multipliers[code] ?? 1;
+      if (mult !== 1) m.set(code, (activeTotals.get(code) || 0) * mult);
+    }
+    return m;
+  }, [activeTotals, multipliers]);
+
   const mainLines = useMemo(() => lines.filter(l => l.kind === "main").sort((a,b) => (a.main_no||0)-(b.main_no||0)), [lines]);
   const subLines = useMemo(() => lines.filter(l => l.kind === "sub").sort((a,b) => (a.sub_no||0)-(b.sub_no||0)), [lines]);
 
   const waterfallData = useMemo(() => {
     let running = 0;
     return mainLines.map((l, idx) => {
-      const raw = activeTotals.get(l.code) || 0;
+      const raw = adjustedTotals.get(l.code) || 0;
       const delta = l.bucket === "revenue" ? raw : -raw;
       const base = delta >= 0 ? running : running + delta;
       const bar = Math.abs(delta);
@@ -146,7 +157,7 @@ function WaterfallPage() {
       running += delta;
       return { idx, code: l.code, name: `#${l.code}`, label: l.label || "", bucket: l.bucket, base, bar, delta, running, prevRunning: prev };
     });
-  }, [mainLines, activeTotals]);
+  }, [mainLines, adjustedTotals]);
 
   const kpisFor = (totals: Map<string, number>) => {
     const sum = (codes: string[]) => codes.reduce((s, c) => s + (totals.get(c) || 0), 0);
@@ -159,9 +170,11 @@ function WaterfallPage() {
     const pocket = grossMargin - opex;
     return { grossRevenue, deductions, netRevenue, grossMargin, pocket };
   };
-  const kpis = useMemo(() => kpisFor(activeTotals), [activeTotals]);
+  const baselineKpis = useMemo(() => kpisFor(activeTotals), [activeTotals]);
+  const kpis = useMemo(() => kpisFor(adjustedTotals), [adjustedTotals]);
   const kpisB2B = useMemo(() => kpisFor(totalsB2B), [totalsB2B]);
   const kpisB2C = useMemo(() => kpisFor(totalsB2C), [totalsB2C]);
+  const isAdjusted = useMemo(() => Object.values(multipliers).some(v => v !== 1), [multipliers]);
 
   const subData = useMemo(() => subLines.map(l => ({
     code: l.code, name: l.code, label: l.label || "",
@@ -328,20 +341,39 @@ function WaterfallPage() {
         <>
           <div className="grid grid-cols-5 gap-px bg-border">
             {[
-              { label: "Receita Bruta", v: kpis.grossRevenue },
-              { label: "Deduções", v: -kpis.deductions },
-              { label: "Receita Líquida", v: kpis.netRevenue },
-              { label: "Margem Bruta", v: kpis.grossMargin },
-              { label: "Pocket Margin", v: kpis.pocket, highlight: true },
-            ].map((k) => (
-              <div key={k.label} className="bg-card p-6">
-                <p className="eyebrow">{k.label}</p>
-                <p className={`font-display text-3xl mt-3 ${k.highlight ? "text-[var(--gold)]" : "text-primary"}`}>
-                  {fmt(k.v)}
-                </p>
-              </div>
-            ))}
+              { label: "Receita Bruta", v: kpis.grossRevenue, base: baselineKpis.grossRevenue },
+              { label: "Deduções", v: -kpis.deductions, base: -baselineKpis.deductions },
+              { label: "Receita Líquida", v: kpis.netRevenue, base: baselineKpis.netRevenue },
+              { label: "Margem Bruta", v: kpis.grossMargin, base: baselineKpis.grossMargin },
+              { label: "Pocket Margin", v: kpis.pocket, base: baselineKpis.pocket, highlight: true },
+            ].map((k) => {
+              const d = k.v - k.base;
+              const pct = k.base !== 0 ? (d / Math.abs(k.base)) * 100 : 0;
+              return (
+                <div key={k.label} className="bg-card p-6">
+                  <p className="eyebrow">{k.label}</p>
+                  <p className={`font-display text-3xl mt-3 ${k.highlight ? "text-[var(--gold)]" : "text-primary"}`}>
+                    {fmt(k.v)}
+                  </p>
+                  {isAdjusted && Math.abs(d) > 0.5 && (
+                    <p className={`mt-2 text-xs font-mono ${d >= 0 ? "text-[hsl(var(--cascata-inflow))]" : "text-[hsl(var(--cascata-outflow))]"}`}>
+                      {d >= 0 ? "▲" : "▼"} {fmtShort(d)} ({pct >= 0 ? "+" : ""}{pct.toFixed(1)}%)
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
+
+          <SensitivityPanel
+            mainLines={mainLines}
+            baseTotals={activeTotals}
+            multipliers={multipliers}
+            setMultipliers={setMultipliers}
+            isAdjusted={isAdjusted}
+            pocketDelta={kpis.pocket - baselineKpis.pocket}
+          />
+
 
           <div className="bg-card border border-border">
             <div className="px-8 py-5 border-b border-border flex items-center justify-between">
@@ -430,7 +462,7 @@ function WaterfallPage() {
                     <td className="px-6 py-3 text-xs text-muted-foreground">{l.category}</td>
                     <td className="px-6 py-3">{l.label}</td>
                     <td className="px-6 py-3 text-xs">{l.department || "—"}</td>
-                    <td className="px-6 py-3 text-right font-mono">{fmt(activeTotals.get(l.code) || 0)}</td>
+                    <td className="px-6 py-3 text-right font-mono">{fmt(adjustedTotals.get(l.code) || 0)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -536,6 +568,91 @@ function CompareView({
         </table>
       </div>
     </>
+  );
+}
+
+function SensitivityPanel({
+  mainLines, baseTotals, multipliers, setMultipliers, isAdjusted, pocketDelta,
+}: {
+  mainLines: Line[];
+  baseTotals: Map<string, number>;
+  multipliers: Record<string, number>;
+  setMultipliers: (m: Record<string, number>) => void;
+  isAdjusted: boolean;
+  pocketDelta: number;
+}) {
+  const targets = ["6", "7", "8"]
+    .map(code => mainLines.find(l => l.code === code))
+    .filter((l): l is Line => !!l);
+
+  const setMult = (code: string, mult: number) => {
+    setMultipliers({ ...multipliers, [code]: mult });
+  };
+  const reset = () => setMultipliers({ "6": 1, "7": 1, "8": 1 });
+  const compact = (n: number) =>
+    new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+  const brl = (n: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(n);
+
+  return (
+    <div className="bg-card border border-border">
+      <div className="px-8 py-5 border-b border-border flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <p className="eyebrow">ANÁLISE DE SENSIBILIDADE</p>
+          <h2 className="font-display text-xl text-primary mt-1">Simule mudanças nas deduções</h2>
+        </div>
+        <div className="flex items-center gap-4">
+          {isAdjusted && (
+            <div className="text-right">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Δ Pocket Margin</p>
+              <p className={`font-display text-lg ${pocketDelta >= 0 ? "text-[hsl(var(--cascata-inflow))]" : "text-[hsl(var(--cascata-outflow))]"}`}>
+                {pocketDelta >= 0 ? "+" : ""}{brl(pocketDelta)}
+              </p>
+            </div>
+          )}
+          <button onClick={reset} disabled={!isAdjusted}
+            className="border border-border px-4 py-2 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed">
+            Resetar
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
+        {targets.map(l => {
+          const base = baseTotals.get(l.code) || 0;
+          const mult = multipliers[l.code] ?? 1;
+          const adjusted = base * mult;
+          const pctChange = (mult - 1) * 100;
+          return (
+            <div key={l.code} className="bg-card p-6 space-y-3">
+              <div className="flex items-baseline justify-between">
+                <p className="text-xs font-mono text-muted-foreground">#{l.code}</p>
+                <span className={`text-xs font-mono font-semibold ${pctChange === 0 ? "text-muted-foreground" : pctChange < 0 ? "text-[hsl(var(--cascata-inflow))]" : "text-[hsl(var(--cascata-outflow))]"}`}>
+                  {pctChange > 0 ? "+" : ""}{pctChange.toFixed(0)}%
+                </span>
+              </div>
+              <p className="font-display text-sm text-primary leading-tight">{l.label}</p>
+              <input
+                type="range" min={-50} max={50} step={1}
+                value={Math.round(pctChange)}
+                onChange={(e) => setMult(l.code, 1 + Number(e.target.value) / 100)}
+                className="w-full accent-[hsl(var(--cascata-gold))]"
+              />
+              <div className="flex items-baseline justify-between text-xs">
+                <span className="text-muted-foreground">Base</span>
+                <span className="font-mono">{compact(base)}</span>
+              </div>
+              <div className="flex items-baseline justify-between text-xs">
+                <span className="text-muted-foreground">Simulado</span>
+                <span className={`font-mono font-semibold ${mult !== 1 ? "text-[var(--gold)]" : ""}`}>{compact(adjusted)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="px-8 py-3 text-xs text-muted-foreground border-t border-border">
+        Mova os sliders para ver impacto em tempo real no waterfall e nos KPIs acima. Variação de −50% a +50% sobre o valor atual da linha.
+      </p>
+    </div>
   );
 }
 
