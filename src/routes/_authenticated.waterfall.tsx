@@ -516,7 +516,7 @@ function WaterfallPage() {
       )}
 
       {shareOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-6" onClick={() => setShareOpen(false)}>
+        <div className="fixed inset-0 z-50 bg-[color:var(--cascata-abyss)]/70 flex items-center justify-center p-6" onClick={() => setShareOpen(false)}>
           <div className="bg-card border border-border max-w-lg w-full p-8 space-y-5" onClick={(e) => e.stopPropagation()}>
             <div>
               <p className="eyebrow">Link de visualização</p>

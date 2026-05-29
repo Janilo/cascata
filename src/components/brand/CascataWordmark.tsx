@@ -18,8 +18,7 @@ export function CascataWordmark({ className, height = 28, glyphOnly = false }: P
       height={height}
       role="img"
       aria-label="Cascata"
-      className={className}
-      style={{ color: "var(--cascata-navy)" }}
+      className={`text-[color:var(--cascata-navy)] ${className ?? ""}`}
     >
       <rect x="0" y="8" width="9" height="9" fill="currentColor" />
       <rect x="12" y="16" width="9" height="9" fill="currentColor" />

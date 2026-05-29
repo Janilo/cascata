@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { CascataWordmark } from "@/components/brand/CascataWordmark";
 
 export const Route = createFileRoute("/aguardando-aprovacao")({
   component: PendingPage,
@@ -42,9 +43,9 @@ function PendingPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-10">
       <div className="max-w-xl w-full space-y-6">
-        <Link to="/" className="block">
-          <span className="font-display text-3xl text-primary">Cascata</span>
-          <p className="eyebrow mt-1">por J P Saraiva</p>
+        <Link to="/" aria-label="Cascata" className="block">
+          <CascataWordmark height={32} />
+          <p className="eyebrow mt-2">por J P Saraiva</p>
         </Link>
         <div className="border border-border bg-card p-8 space-y-4">
           <p className="eyebrow">ACESSO PENDENTE</p>

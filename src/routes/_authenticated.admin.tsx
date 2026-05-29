@@ -141,7 +141,7 @@ function AdminPage() {
                   </select>
                 </td>
                 <td className="px-6 py-3">
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-wider rounded ${r.is_approved ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-wider rounded ${r.is_approved ? "pill-inflow" : "bg-muted text-muted-foreground"}`}>
                     {r.is_approved ? <><Check className="w-3 h-3" /> Sim</> : <><X className="w-3 h-3" /> Não</>}
                   </span>
                 </td>
@@ -281,7 +281,7 @@ function AdminPage() {
                   <td className="px-6 py-2 text-xs text-muted-foreground whitespace-nowrap">{new Date(a.changed_at).toLocaleString("pt-BR")}</td>
                   <td className="px-6 py-2 text-xs">{a.changed_by ? (nameById.get(a.changed_by) || a.changed_by.slice(0, 8)) : "—"}</td>
                   <td className="px-6 py-2">
-                    <span className={`inline-block px-2 py-0.5 text-[10px] uppercase tracking-wider rounded ${a.action === "INSERT" ? "bg-emerald-600 text-white" : a.action === "DELETE" ? "bg-destructive text-destructive-foreground" : "bg-secondary"}`}>{a.action}</span>
+                    <span className={`inline-block px-2 py-0.5 text-[10px] uppercase tracking-wider rounded ${a.action === "INSERT" ? "pill-inflow" : a.action === "DELETE" ? "bg-destructive text-destructive-foreground" : "bg-secondary"}`}>{a.action}</span>
                   </td>
                   <td className="px-6 py-2 font-mono text-xs">{a.line_code || "—"}</td>
                   <td className="px-6 py-2 text-xs">{a.bu || "—"}</td>
