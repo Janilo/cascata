@@ -22,6 +22,7 @@ import { Route as AuthenticatedInputsRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedCustoDeServirRouteImport } from './routes/_authenticated.custo-de-servir'
 import { Route as AuthenticatedComparativoRouteImport } from './routes/_authenticated.comparativo'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated.clientes'
+import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated.auditoria'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 
 const SignupRoute = SignupRouteImport.update({
@@ -91,6 +92,11 @@ const AuthenticatedClientesRoute = AuthenticatedClientesRouteImport.update({
   path: '/clientes',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAuditoriaRoute = AuthenticatedAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/metodologia': typeof MetodologiaRoute
   '/signup': typeof SignupRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/clientes': typeof AuthenticatedClientesRoute
   '/comparativo': typeof AuthenticatedComparativoRoute
   '/custo-de-servir': typeof AuthenticatedCustoDeServirRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/metodologia': typeof MetodologiaRoute
   '/signup': typeof SignupRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/clientes': typeof AuthenticatedClientesRoute
   '/comparativo': typeof AuthenticatedComparativoRoute
   '/custo-de-servir': typeof AuthenticatedCustoDeServirRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/metodologia': typeof MetodologiaRoute
   '/signup': typeof SignupRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/auditoria': typeof AuthenticatedAuditoriaRoute
   '/_authenticated/clientes': typeof AuthenticatedClientesRoute
   '/_authenticated/comparativo': typeof AuthenticatedComparativoRoute
   '/_authenticated/custo-de-servir': typeof AuthenticatedCustoDeServirRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/metodologia'
     | '/signup'
     | '/admin'
+    | '/auditoria'
     | '/clientes'
     | '/comparativo'
     | '/custo-de-servir'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/metodologia'
     | '/signup'
     | '/admin'
+    | '/auditoria'
     | '/clientes'
     | '/comparativo'
     | '/custo-de-servir'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/metodologia'
     | '/signup'
     | '/_authenticated/admin'
+    | '/_authenticated/auditoria'
     | '/_authenticated/clientes'
     | '/_authenticated/comparativo'
     | '/_authenticated/custo-de-servir'
@@ -296,6 +308,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/auditoria': {
+      id: '/_authenticated/auditoria'
+      path: '/auditoria'
+      fullPath: '/auditoria'
+      preLoaderRoute: typeof AuthenticatedAuditoriaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -308,6 +327,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAuditoriaRoute: typeof AuthenticatedAuditoriaRoute
   AuthenticatedClientesRoute: typeof AuthenticatedClientesRoute
   AuthenticatedComparativoRoute: typeof AuthenticatedComparativoRoute
   AuthenticatedCustoDeServirRoute: typeof AuthenticatedCustoDeServirRoute
@@ -318,6 +338,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAuditoriaRoute: AuthenticatedAuditoriaRoute,
   AuthenticatedClientesRoute: AuthenticatedClientesRoute,
   AuthenticatedComparativoRoute: AuthenticatedComparativoRoute,
   AuthenticatedCustoDeServirRoute: AuthenticatedCustoDeServirRoute,
