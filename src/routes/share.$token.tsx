@@ -151,6 +151,3 @@ function SharedWaterfallPage() {
     </div>
   );
 }
-
-// Silence unused import lint
-void notFound;
