@@ -307,3 +307,22 @@ function InputsPage() {
     </div>
   );
 }
+
+function ConfidenceBadge({ ext }: { ext: any }) {
+  const c = typeof ext?.confidence === "number" ? ext.confidence : null;
+  if (c === null) return null;
+  if (c < 0.7) {
+    return (
+      <span title={`Confiança da IA: ${(c * 100).toFixed(0)}%`}
+        className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] font-semibold bg-[hsl(var(--cascata-outflow)/0.15)] text-[hsl(var(--cascata-outflow))] border border-[hsl(var(--cascata-outflow)/0.4)]">
+        Revisar · {(c * 100).toFixed(0)}%
+      </span>
+    );
+  }
+  return (
+    <span title={`Confiança da IA: ${(c * 100).toFixed(0)}%`}
+      className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+      {(c * 100).toFixed(0)}%
+    </span>
+  );
+}
