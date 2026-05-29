@@ -302,6 +302,13 @@ function WaterfallPage() {
           <button onClick={exportPDF} className="inline-flex items-center gap-2 border border-border px-4 py-3 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary">
             <FileText className="w-4 h-4" /> PDF
           </button>
+          <button
+            onClick={() => { setShareOpen(true); setShareUrl(null); setShareCopied(false); }}
+            disabled={mode === "COMPARE"}
+            title={mode === "COMPARE" ? "Selecione B2B ou B2C para compartilhar" : "Gerar link read-only"}
+            className="inline-flex items-center gap-2 border border-border px-4 py-3 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed">
+            <Share2 className="w-4 h-4" /> Compartilhar
+          </button>
           <Link to="/inputs" className="inline-flex items-center gap-2 bg-[var(--gold)] text-ink px-4 py-3 text-xs uppercase tracking-[0.18em] font-semibold">
             <Upload className="w-4 h-4" /> Inputs
           </Link>
