@@ -40,7 +40,7 @@ function InputsPage() {
       if (!u.user) return;
       const { data: p } = await supabase.from("profiles").select("department").eq("id", u.user.id).maybeSingle();
       setDept(p?.department || "");
-      const { data: ls } = await supabase.from("waterfall_lines").select("*").eq("kind","main").order("sort_order");
+      const { data: ls } = await supabase.from("waterfall_lines").select("*").order("sort_order");
       setLines((ls as Line[]) || []);
       const { data: cs } = await supabase.from("customers").select("id,customer_name,bu").order("customer_name");
       setCustomers((cs as Customer[]) || []);
