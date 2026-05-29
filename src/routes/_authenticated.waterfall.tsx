@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import { ChevronDown, ChevronUp, Upload, FileSpreadsheet, FileText, Share2, Copy, Check } from "lucide-react";
 import { getWaterfall, createSharedLink } from "@/lib/waterfall.functions";
+import { useBusinessUnits, type BusinessUnit } from "@/hooks/use-business-units";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -22,18 +23,35 @@ type Line = {
   main_no: number | null; sub_no: number | null; sort_order: number;
 };
 
-type Mode = "B2B" | "B2C" | "COMPARE";
+type Kpis = { grossRevenue: number; deductions: number; netRevenue: number; grossMargin: number; pocket: number };
+
+const COMPARE = "__COMPARE__";
 
 type CustomerOpt = { id: string; customer_name: string; account_name: string | null; account_id: string | null; bu: string; attrs: Record<string, unknown> };
 
+function kpisFor(totals: Map<string, number>): Kpis {
+  const sum = (codes: string[]) => codes.reduce((s, c) => s + (totals.get(c) || 0), 0);
+  const grossRevenue = sum(["1","2","3","4","5"]);
+  const deductions = sum(["6","7","8"]);
+  const netRevenue = grossRevenue - deductions;
+  const cogs = sum(["9","10","11","12","13","14","15","16"]);
+  const grossMargin = netRevenue - cogs;
+  const opex = sum(["17","18","19","20","21","22","23","24","25","26","27","28","29"]);
+  const pocket = grossMargin - opex;
+  return { grossRevenue, deductions, netRevenue, grossMargin, pocket };
+}
+
 function WaterfallPage() {
-  const [mode, setMode] = useState<Mode>("B2B");
+  const { bus, labelOf, colorOf } = useBusinessUnits();
+  const [mode, setMode] = useState<string>("B2B");
+  useEffect(() => {
+    if (bus.length && mode !== COMPARE && !bus.find(b => b.code === mode)) setMode(bus[0].code);
+  }, [bus, mode]);
+
   const [lines, setLines] = useState<Line[]>([]);
-  const [totalsB2B, setTotalsB2B] = useState<Map<string, number>>(new Map());
-  const [totalsB2C, setTotalsB2C] = useState<Map<string, number>>(new Map());
+  const [totalsByBu, setTotalsByBu] = useState<Map<string, Map<string, number>>>(new Map());
+  const [subTotalsByBu, setSubTotalsByBu] = useState<Map<string, Map<string, number>>>(new Map());
   const [showSub, setShowSub] = useState(false);
-  const [subTotalsB2B, setSubTotalsB2B] = useState<Map<string, number>>(new Map());
-  const [subTotalsB2C, setSubTotalsB2C] = useState<Map<string, number>>(new Map());
   const [customers, setCustomers] = useState<CustomerOpt[]>([]);
   const [filterDept, setFilterDept] = useState<string>("");
   const [filterLeader, setFilterLeader] = useState<string>("");
@@ -74,36 +92,42 @@ function WaterfallPage() {
 
   useEffect(() => {
     (async () => {
-      const need: ("B2B" | "B2C")[] = mode === "COMPARE" ? ["B2B", "B2C"] : [mode];
-      for (const bu of need) {
-        const wf = await callWaterfall({ data: { bu, ...filterArgs } });
-        const totals = new Map(Object.entries(wf.totalsByCode));
-        if (bu === "B2B") setTotalsB2B(totals); else setTotalsB2C(totals);
-        let q = supabase.from("line_inputs").select("line_code,value,customer_id,department").eq("bu", bu).eq("reference_date", referenceDate);
+      if (!bus.length) return;
+      const need: BusinessUnit[] = mode === COMPARE ? bus : bus.filter(b => b.code === mode);
+      if (need.length === 0) return;
+      const allowed = new Set(
+        customers
+          .filter(c => {
+            if (filterCustomer && c.id !== filterCustomer) return false;
+            if (filterAccount && c.account_name !== filterAccount && c.account_id !== filterAccount) return false;
+            const a = c.attrs || {};
+            if (filterLeader && a.leader !== filterLeader) return false;
+            return true;
+          })
+          .map(c => c.id)
+      );
+      const anyCustFilter = !!(filterCustomer || filterAccount || filterLeader);
+
+      const totalsNext = new Map(totalsByBu);
+      const subNext = new Map(subTotalsByBu);
+      for (const b of need) {
+        const wf = await callWaterfall({ data: { bu: b.code, ...filterArgs } });
+        totalsNext.set(b.code, new Map(Object.entries(wf.totalsByCode)));
+        let q = supabase.from("line_inputs").select("line_code,value,customer_id,department").eq("bu", b.code).eq("reference_date", referenceDate);
         if (filterArgs.department) q = q.eq("department", filterArgs.department);
         const { data: subs } = await q;
-        // Build allowed customer ids matching account/leader/customer filters
-        const allowed = new Set(
-          customers
-            .filter(c => {
-              if (filterCustomer && c.id !== filterCustomer) return false;
-              if (filterAccount && c.account_name !== filterAccount && c.account_id !== filterAccount) return false;
-              const a = c.attrs || {};
-              if (filterLeader && a.leader !== filterLeader) return false;
-              return true;
-            })
-            .map(c => c.id)
-        );
-        const anyCustFilter = !!(filterCustomer || filterAccount || filterLeader);
         const m = new Map<string, number>();
         for (const r of subs || []) {
           if (anyCustFilter && !allowed.has(r.customer_id)) continue;
           if (r.line_code.startsWith("7.")) m.set(r.line_code, (m.get(r.line_code) || 0) + Number(r.value || 0));
         }
-        if (bu === "B2B") setSubTotalsB2B(m); else setSubTotalsB2C(m);
+        subNext.set(b.code, m);
       }
+      setTotalsByBu(totalsNext);
+      setSubTotalsByBu(subNext);
     })();
-  }, [mode, callWaterfall, filterArgs, customers, filterCustomer, filterAccount, filterLeader]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, bus, callWaterfall, filterArgs, customers, filterCustomer, filterAccount, filterLeader, referenceDate]);
 
   const deptOptions = useMemo(() => {
     const s = new Set<string>();
@@ -142,8 +166,9 @@ function WaterfallPage() {
       .sort((a, b) => a.customer_name.localeCompare(b.customer_name));
   }, [customers, filterAccount, filterLeader, filterDept]);
 
-  const activeTotals = mode === "B2C" ? totalsB2C : totalsB2B;
-  const activeSub = mode === "B2C" ? subTotalsB2C : subTotalsB2B;
+  const EMPTY = useMemo(() => new Map<string, number>(), []);
+  const activeTotals = mode === COMPARE ? EMPTY : (totalsByBu.get(mode) ?? EMPTY);
+  const activeSub = mode === COMPARE ? EMPTY : (subTotalsByBu.get(mode) ?? EMPTY);
 
   // Apply sensitivity multipliers to deduction lines (6, 7, 8)
   const adjustedTotals = useMemo(() => {
@@ -171,21 +196,13 @@ function WaterfallPage() {
     });
   }, [mainLines, adjustedTotals]);
 
-  const kpisFor = (totals: Map<string, number>) => {
-    const sum = (codes: string[]) => codes.reduce((s, c) => s + (totals.get(c) || 0), 0);
-    const grossRevenue = sum(["1","2","3","4","5"]);
-    const deductions = sum(["6","7","8"]);
-    const netRevenue = grossRevenue - deductions;
-    const cogs = sum(["9","10","11","12","13","14","15","16"]);
-    const grossMargin = netRevenue - cogs;
-    const opex = sum(["17","18","19","20","21","22","23","24","25","26","27","28","29"]);
-    const pocket = grossMargin - opex;
-    return { grossRevenue, deductions, netRevenue, grossMargin, pocket };
-  };
   const baselineKpis = useMemo(() => kpisFor(activeTotals), [activeTotals]);
   const kpis = useMemo(() => kpisFor(adjustedTotals), [adjustedTotals]);
-  const kpisB2B = useMemo(() => kpisFor(totalsB2B), [totalsB2B]);
-  const kpisB2C = useMemo(() => kpisFor(totalsB2C), [totalsB2C]);
+  const kpisByBu = useMemo(() => {
+    const out = new Map<string, Kpis>();
+    for (const b of bus) out.set(b.code, kpisFor(totalsByBu.get(b.code) ?? EMPTY));
+    return out;
+  }, [bus, totalsByBu, EMPTY]);
   const isAdjusted = useMemo(() => Object.values(multipliers).some(v => v !== 1), [multipliers]);
 
   const subData = useMemo(() => subLines.map(l => ({
@@ -201,60 +218,56 @@ function WaterfallPage() {
   // ====== Exports ======
   const exportExcel = () => {
     const wb = XLSX.utils.book_new();
-    if (mode === "COMPARE") {
-      const rows = mainLines.map(l => ({
-        "#": l.code,
-        Categoria: l.category || "",
-        Linha: l.label || "",
-        Depto: l.department || "",
-        B2B: totalsB2B.get(l.code) || 0,
-        B2C: totalsB2C.get(l.code) || 0,
-        "Δ (B2B−B2C)": (totalsB2B.get(l.code) || 0) - (totalsB2C.get(l.code) || 0),
-      }));
+    if (mode === COMPARE) {
+      const rows = mainLines.map(l => {
+        const row: Record<string, unknown> = { "#": l.code, Linha: l.label };
+        for (const b of bus) row[b.label] = totalsByBu.get(b.code)?.get(l.code) || 0;
+        return row;
+      });
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Comparativo");
     } else {
       const rows = mainLines.map(l => ({
         "#": l.code, Categoria: l.category || "", Linha: l.label || "",
-        Depto: l.department || "", Valor: activeTotals.get(l.code) || 0,
+        Depto: l.department || "", Valor: adjustedTotals.get(l.code) || 0,
       }));
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), `Waterfall ${mode}`);
-      const subRows = subLines.map(l => ({
-        "#": l.code, Tipo: (l.category || "").replace("  └ ", ""),
-        Descricao: l.label || "", Valor: activeSub.get(l.code) || 0,
-      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), `Waterfall ${labelOf(mode)}`);
+      const subRows = subLines.map(l => ({ "#": l.code, Categoria: l.category || "", Sublinha: l.label || "", Valor: activeSub.get(l.code) || 0 }));
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(subRows), "Linha 7 (sub)");
     }
-    XLSX.writeFile(wb, `waterfall-${mode.toLowerCase()}-${new Date().toISOString().slice(0,10)}.xlsx`);
+    XLSX.writeFile(wb, `waterfall-${mode === COMPARE ? "compare" : mode.toLowerCase()}-${new Date().toISOString().slice(0,10)}.xlsx`);
   };
 
   const exportPDF = () => {
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-    const title = mode === "COMPARE" ? "Waterfall — B2B vs B2C" : `Waterfall — ${mode}`;
+    const title = mode === COMPARE
+      ? `Waterfall — Comparativo (${bus.map(b => b.label).join(" vs ")})`
+      : `Waterfall — ${labelOf(mode)}`;
     doc.setFontSize(16); doc.text(title, 40, 40);
     doc.setFontSize(9); doc.setTextColor(120);
     doc.text(new Date().toLocaleString("pt-BR"), 40, 56);
 
-    if (mode === "COMPARE") {
+    if (mode === COMPARE) {
+      const kpiHead = ["KPI", ...bus.map(b => b.label)];
+      const kpiRows: (string)[][] = (
+        [
+          ["Receita Bruta", (k: Kpis) => k.grossRevenue],
+          ["Deduções", (k: Kpis) => -k.deductions],
+          ["Receita Líquida", (k: Kpis) => k.netRevenue],
+          ["Margem Bruta", (k: Kpis) => k.grossMargin],
+          ["Pocket Margin", (k: Kpis) => k.pocket],
+        ] as Array<[string, (k: Kpis) => number]>
+      ).map(([label, pick]) => [label, ...bus.map(b => fmt(pick(kpisByBu.get(b.code) ?? kpisFor(EMPTY))))]);
       autoTable(doc, {
-        startY: 78,
-        head: [["KPI", "B2B", "B2C", "Δ"]],
-        body: [
-          ["Receita Bruta", fmt(kpisB2B.grossRevenue), fmt(kpisB2C.grossRevenue), fmt(kpisB2B.grossRevenue - kpisB2C.grossRevenue)],
-          ["Deduções", fmt(-kpisB2B.deductions), fmt(-kpisB2C.deductions), fmt(-(kpisB2B.deductions - kpisB2C.deductions))],
-          ["Receita Líquida", fmt(kpisB2B.netRevenue), fmt(kpisB2C.netRevenue), fmt(kpisB2B.netRevenue - kpisB2C.netRevenue)],
-          ["Margem Bruta", fmt(kpisB2B.grossMargin), fmt(kpisB2C.grossMargin), fmt(kpisB2B.grossMargin - kpisB2C.grossMargin)],
-          ["Pocket Margin", fmt(kpisB2B.pocket), fmt(kpisB2C.pocket), fmt(kpisB2B.pocket - kpisB2C.pocket)],
-        ],
+        startY: 78, head: [kpiHead], body: kpiRows,
         styles: { fontSize: 9 }, headStyles: { fillColor: [30, 30, 30] },
       });
       autoTable(doc, {
-        head: [["#", "Linha", "B2B", "B2C", "Δ"]],
-        body: mainLines.map(l => {
-          const a = totalsB2B.get(l.code) || 0, b = totalsB2C.get(l.code) || 0;
-          return [l.code, l.label || "", fmt(a), fmt(b), fmt(a - b)];
-        }),
+        head: [["#", "Linha", ...bus.map(b => b.label)]],
+        body: mainLines.map(l => [
+          l.code, l.label || "",
+          ...bus.map(b => fmt(totalsByBu.get(b.code)?.get(l.code) || 0)),
+        ]),
         styles: { fontSize: 8 }, headStyles: { fillColor: [30, 30, 30] },
-        columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
       });
     } else {
       autoTable(doc, {
@@ -276,7 +289,7 @@ function WaterfallPage() {
         columnStyles: { 4: { halign: "right" } },
       });
     }
-    doc.save(`waterfall-${mode.toLowerCase()}-${new Date().toISOString().slice(0,10)}.pdf`);
+    doc.save(`waterfall-${mode === COMPARE ? "compare" : mode.toLowerCase()}-${new Date().toISOString().slice(0,10)}.pdf`);
   };
 
   return (
@@ -288,13 +301,19 @@ function WaterfallPage() {
           <p className="text-sm text-muted-foreground mt-2">29 marcos do P&L com prioridade P1 → P2 → P3 → Manual. Clique na linha #7 para abrir as 33 sublinhas de desconto comercial.</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="inline-flex border border-border">
-            {(["B2B","B2C","COMPARE"] as const).map(b => (
-              <button key={b} onClick={() => setMode(b)}
-                className={`px-5 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${mode===b ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>
-                {b === "COMPARE" ? "B2B vs B2C" : b}
+          <div className="inline-flex border border-border flex-wrap">
+            {bus.map(b => (
+              <button key={b.code} onClick={() => setMode(b.code)}
+                className={`px-5 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${mode===b.code ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>
+                {b.label}
               </button>
             ))}
+            {bus.length >= 2 && (
+              <button onClick={() => setMode(COMPARE)}
+                className={`px-5 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${mode===COMPARE ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>
+                Comparar
+              </button>
+            )}
           </div>
           <button onClick={exportExcel} className="inline-flex items-center gap-2 border border-border px-4 py-3 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary">
             <FileSpreadsheet className="w-4 h-4" /> Excel
@@ -304,8 +323,8 @@ function WaterfallPage() {
           </button>
           <button
             onClick={() => { setShareOpen(true); setShareUrl(null); setShareCopied(false); }}
-            disabled={mode === "COMPARE"}
-            title={mode === "COMPARE" ? "Selecione B2B ou B2C para compartilhar" : "Gerar link read-only"}
+            disabled={mode === COMPARE}
+            title={mode === COMPARE ? "Selecione uma BU para compartilhar" : "Gerar link read-only"}
             className="inline-flex items-center gap-2 border border-border px-4 py-3 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed">
             <Share2 className="w-4 h-4" /> Compartilhar
           </button>
@@ -319,7 +338,7 @@ function WaterfallPage() {
         <div className="flex flex-col gap-1">
           <span className="eyebrow text-[10px]">Período</span>
           <input type="month" value={referenceMonth} onChange={(e) => setReferenceMonth(e.target.value)}
-            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[160px] font-mono" />
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[140px] font-mono" />
         </div>
         <div className="flex flex-col gap-1">
           <span className="eyebrow text-[10px]">Departamento</span>
@@ -361,7 +380,7 @@ function WaterfallPage() {
         )}
       </div>
 
-      {mode !== "COMPARE" ? (
+      {mode !== COMPARE ? (
         <>
           <div className="grid grid-cols-5 gap-px bg-border">
             {[
@@ -398,10 +417,9 @@ function WaterfallPage() {
             pocketDelta={kpis.pocket - baselineKpis.pocket}
           />
 
-
           <div className="bg-card border border-border">
             <div className="px-8 py-5 border-b border-border flex items-center justify-between">
-              <h2 className="font-display text-xl text-primary">Waterfall principal — {mode}</h2>
+              <h2 className="font-display text-xl text-primary">Waterfall principal — {labelOf(mode)}</h2>
               <span className="text-xs text-muted-foreground uppercase tracking-[0.18em]">Receita → Deduções → Custos · linha mostra acumulado</span>
             </div>
             <div className="h-[520px] p-6">
@@ -494,7 +512,7 @@ function WaterfallPage() {
           </div>
         </>
       ) : (
-        <CompareView mainLines={mainLines} totalsB2B={totalsB2B} totalsB2C={totalsB2C} kpisB2B={kpisB2B} kpisB2C={kpisB2C} />
+        <CompareView mainLines={mainLines} bus={bus} totalsByBu={totalsByBu} kpisByBu={kpisByBu} colorOf={colorOf} />
       )}
 
       {shareOpen && (
@@ -502,9 +520,9 @@ function WaterfallPage() {
           <div className="bg-card border border-border max-w-lg w-full p-8 space-y-5" onClick={(e) => e.stopPropagation()}>
             <div>
               <p className="eyebrow">Link de visualização</p>
-              <h2 className="font-display text-2xl text-primary mt-2">Compartilhar waterfall {mode}</h2>
+              <h2 className="font-display text-2xl text-primary mt-2">Compartilhar waterfall {labelOf(mode)}</h2>
               <p className="text-xs text-muted-foreground mt-2">
-                URL pública, read-only, sem login. Reflete a BU {mode}{referenceMonth ? ` no período ${referenceMonth}` : ""}.
+                URL pública, read-only, sem login. Reflete a BU {labelOf(mode)}{referenceMonth ? ` no período ${referenceMonth}` : ""}.
               </p>
             </div>
 
@@ -531,12 +549,12 @@ function WaterfallPage() {
                 <div className="flex justify-end gap-3 pt-2">
                   <button onClick={() => setShareOpen(false)}
                     className="border border-border px-4 py-2 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-secondary">Cancelar</button>
-                  <button disabled={shareBusy || mode === "COMPARE"}
+                  <button disabled={shareBusy || mode === COMPARE}
                     onClick={async () => {
                       setShareBusy(true);
                       try {
                         const row = await callCreateShare({ data: {
-                          bu: mode as "B2B" | "B2C",
+                          bu: mode,
                           referenceDate,
                           label: shareLabel || undefined,
                           expiresInDays: shareDays,
@@ -574,51 +592,71 @@ function WaterfallPage() {
 }
 
 function CompareView({
-  mainLines, totalsB2B, totalsB2C, kpisB2B, kpisB2C,
+  mainLines, bus, totalsByBu, kpisByBu, colorOf,
 }: {
-  mainLines: Line[]; totalsB2B: Map<string, number>; totalsB2C: Map<string, number>;
-  kpisB2B: { grossRevenue: number; deductions: number; netRevenue: number; grossMargin: number; pocket: number };
-  kpisB2C: { grossRevenue: number; deductions: number; netRevenue: number; grossMargin: number; pocket: number };
+  mainLines: Line[];
+  bus: BusinessUnit[];
+  totalsByBu: Map<string, Map<string, number>>;
+  kpisByBu: Map<string, Kpis>;
+  colorOf: (code: string) => string;
 }) {
-  const kpiRows = [
-    { label: "Receita Bruta", b2b: kpisB2B.grossRevenue, b2c: kpisB2C.grossRevenue },
-    { label: "Deduções", b2b: -kpisB2B.deductions, b2c: -kpisB2C.deductions },
-    { label: "Receita Líquida", b2b: kpisB2B.netRevenue, b2c: kpisB2C.netRevenue },
-    { label: "Margem Bruta", b2b: kpisB2B.grossMargin, b2c: kpisB2C.grossMargin },
-    { label: "Pocket Margin", b2b: kpisB2B.pocket, b2c: kpisB2C.pocket, highlight: true },
+  const kpiDefs: Array<[string, (k: Kpis) => number, boolean?]> = [
+    ["Receita Bruta", (k) => k.grossRevenue],
+    ["Deduções", (k) => -k.deductions],
+    ["Receita Líquida", (k) => k.netRevenue],
+    ["Margem Bruta", (k) => k.grossMargin],
+    ["Pocket Margin", (k) => k.pocket, true],
   ];
-  const chartData = mainLines.map(l => ({
-    name: `#${l.code}`,
-    B2B: (totalsB2B.get(l.code) || 0) * (l.bucket === "revenue" ? 1 : -1),
-    B2C: (totalsB2C.get(l.code) || 0) * (l.bucket === "revenue" ? 1 : -1),
-  }));
+  const EMPTY_K = { grossRevenue: 0, deductions: 0, netRevenue: 0, grossMargin: 0, pocket: 0 };
+
+  const chartData = mainLines.map(l => {
+    const row: Record<string, number | string> = { name: `#${l.code}` };
+    for (const b of bus) {
+      const t = totalsByBu.get(b.code)?.get(l.code) || 0;
+      row[b.label] = t * (l.bucket === "revenue" ? 1 : -1);
+    }
+    return row;
+  });
+
   return (
     <>
       <div className="grid grid-cols-5 gap-px bg-border">
-        {kpiRows.map((k) => (
-          <div key={k.label} className="bg-card p-6">
-            <p className="eyebrow">{k.label}</p>
-            <div className="mt-3 space-y-1">
-              <div className="flex items-baseline justify-between">
-                <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">B2B</span>
-                <span className={`font-display text-lg ${k.highlight ? "text-[var(--gold)]" : "text-primary"}`}>{fmt(k.b2b)}</span>
-              </div>
-              <div className="flex items-baseline justify-between">
-                <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">B2C</span>
-                <span className={`font-display text-lg ${k.highlight ? "text-[var(--gold)]" : "text-primary"}`}>{fmt(k.b2c)}</span>
-              </div>
-              <div className="flex items-baseline justify-between border-t border-border pt-1 mt-1">
-                <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Δ</span>
-                <span className="font-mono text-xs">{fmt(k.b2b - k.b2c)}</span>
+        {kpiDefs.map(([label, pick, highlight]) => {
+          const values = bus.map(b => pick(kpisByBu.get(b.code) ?? EMPTY_K));
+          const max = Math.max(...values), min = Math.min(...values);
+          return (
+            <div key={label} className="bg-card p-5">
+              <p className="eyebrow">{label}</p>
+              <div className="mt-3 space-y-1">
+                {bus.map((b, i) => (
+                  <div key={b.code} className="flex items-baseline justify-between gap-2">
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground truncate">{b.label}</span>
+                    <span className={`font-display text-base ${highlight ? "text-[var(--gold)]" : "text-primary"}`}>{fmt(values[i])}</span>
+                  </div>
+                ))}
+                {bus.length >= 2 && (
+                  <div className="flex items-baseline justify-between border-t border-border pt-1 mt-1">
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Δ (máx − mín)</span>
+                    <span className="font-mono text-xs">{fmt(max - min)}</span>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="bg-card border border-border">
-        <div className="px-8 py-5 border-b border-border">
-          <h2 className="font-display text-xl text-primary">Comparativo B2B vs B2C — por linha</h2>
+        <div className="px-8 py-5 border-b border-border flex items-center justify-between flex-wrap gap-3">
+          <h2 className="font-display text-xl text-primary">Comparativo entre BUs — por linha</h2>
+          <div className="flex items-center gap-3 text-xs">
+            {bus.map(b => (
+              <span key={b.code} className="inline-flex items-center gap-2">
+                <span className="inline-block w-3 h-3" style={{ background: colorOf(b.code) }} />
+                {b.label}
+              </span>
+            ))}
+          </div>
         </div>
         <div className="h-[480px] p-6">
           <ResponsiveContainer width="100%" height="100%">
@@ -627,14 +665,15 @@ function CompareView({
               <XAxis dataKey="name" stroke="var(--soft)" tick={{ fontSize: 10 }} interval={0} angle={-45} textAnchor="end" height={50} />
               <YAxis stroke="var(--soft)" tick={{ fontSize: 11 }} tickFormatter={(v: number) => fmtShort(v)} />
               <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 0, fontSize: 12 }} formatter={(v: unknown) => fmt(Number(v))} />
-              <Bar dataKey="B2B" fill="var(--marine)" isAnimationActive={false} />
-              <Bar dataKey="B2C" fill="var(--primary)" isAnimationActive={false} />
+              {bus.map(b => (
+                <Bar key={b.code} dataKey={b.label} fill={colorOf(b.code)} isAnimationActive={false} />
+              ))}
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      <div className="bg-card border border-border overflow-hidden">
+      <div className="bg-card border border-border overflow-x-auto">
         <div className="px-8 py-5 border-b border-border">
           <h2 className="font-display text-xl text-primary">Tabela comparativa</h2>
         </div>
@@ -643,21 +682,27 @@ function CompareView({
             <tr>
               <th className="text-left px-6 py-3">#</th>
               <th className="text-left px-6 py-3">Linha</th>
-              <th className="text-right px-6 py-3">B2B</th>
-              <th className="text-right px-6 py-3">B2C</th>
-              <th className="text-right px-6 py-3">Δ (B2B − B2C)</th>
+              {bus.map(b => (
+                <th key={b.code} className="text-right px-6 py-3">{b.label}</th>
+              ))}
+              {bus.length >= 2 && <th className="text-right px-6 py-3">Δ (máx − mín)</th>}
             </tr>
           </thead>
           <tbody>
             {mainLines.map((l) => {
-              const a = totalsB2B.get(l.code) || 0, b = totalsB2C.get(l.code) || 0;
+              const vals = bus.map(b => totalsByBu.get(b.code)?.get(l.code) || 0);
+              const max = Math.max(...vals), min = Math.min(...vals);
+              const spread = max - min;
               return (
                 <tr key={l.code} className="border-t border-border hover:bg-secondary/30">
                   <td className="px-6 py-3 font-mono text-xs">{l.code}</td>
                   <td className="px-6 py-3">{l.label}</td>
-                  <td className="px-6 py-3 text-right font-mono">{fmt(a)}</td>
-                  <td className="px-6 py-3 text-right font-mono">{fmt(b)}</td>
-                  <td className={`px-6 py-3 text-right font-mono ${a-b >= 0 ? "text-[var(--green)]" : "text-destructive"}`}>{fmt(a - b)}</td>
+                  {vals.map((v, i) => (
+                    <td key={bus[i].code} className="px-6 py-3 text-right font-mono">{fmt(v)}</td>
+                  ))}
+                  {bus.length >= 2 && (
+                    <td className="px-6 py-3 text-right font-mono text-muted-foreground">{fmt(spread)}</td>
+                  )}
                 </tr>
               );
             })}
