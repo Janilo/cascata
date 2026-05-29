@@ -43,6 +43,9 @@ function LandingPage() {
           <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="eyebrow">por J P Saraiva</a>
         </Link>
         <nav className="flex items-center gap-8 text-sm">
+          <Link to="/metodologia" className="text-foreground hover:text-primary uppercase tracking-[0.18em] text-xs font-semibold">
+            Metodologia
+          </Link>
           <Link to="/login" className="text-foreground hover:text-primary uppercase tracking-[0.18em] text-xs font-semibold">
             Entrar
           </Link>
