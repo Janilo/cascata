@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Bar, BarChart, CartesianGrid, Cell, ComposedChart, LabelList, Line,
-  ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Tooltip, XAxis, YAxis,
 } from "recharts";
 import { ChevronDown, ChevronUp, Upload, FileSpreadsheet, FileText, Share2, Copy, Check } from "lucide-react";
 import { getWaterfall, createSharedLink } from "@/lib/waterfall.functions";
@@ -29,14 +29,32 @@ const COMPARE = "__COMPARE__";
 
 type CustomerOpt = { id: string; customer_name: string; account_name: string | null; account_id: string | null; bu: string; attrs: Record<string, unknown> };
 
+// P&L aggregate groups — codes map to waterfall_lines.code
+const PL_GROUPS = [
+  { key: "rb",   label: "Receita Bruta",       shortLabel: "Rec. Bruta", codes: ["1","2","3","4","5"],        bucket: "revenue"   },
+  { key: "ded",  label: "Deduções de Receita",  shortLabel: "Deduções",   codes: ["6","7","8"],                bucket: "deduction" },
+  { key: "cpvt", label: "CPV — Tech / Infra",   shortLabel: "CPV Tech",   codes: ["9","10","11","12","13"],    bucket: "cost"      },
+  { key: "cpvo", label: "CPV — Ops de Cliente", shortLabel: "CPV Ops",    codes: ["14","15","16"],             bucket: "cost"      },
+  { key: "sls",  label: "OpEx — Sales",         shortLabel: "Sales",      codes: ["17","18","19"],             bucket: "cost"      },
+  { key: "mkt",  label: "OpEx — Marketing",     shortLabel: "Marketing",  codes: ["20","21","22"],             bucket: "cost"      },
+  { key: "eng",  label: "OpEx — Eng / Produto", shortLabel: "Eng/Prod",   codes: ["23","24","25"],             bucket: "cost"      },
+  { key: "ga",   label: "OpEx — G&A",           shortLabel: "G&A",        codes: ["26","27","28","29"],        bucket: "cost"      },
+] as const;
+
+// Values in DB may be stored as positive OR negative for non-revenue lines.
+// Normalize by treating the magnitude as the absolute value.
+function absOf(totals: Map<string, number>, ...codes: string[]) {
+  return codes.reduce((s, c) => s + Math.abs(totals.get(c) || 0), 0);
+}
+
 function kpisFor(totals: Map<string, number>): Kpis {
-  const sum = (codes: string[]) => codes.reduce((s, c) => s + (totals.get(c) || 0), 0);
-  const grossRevenue = sum(["1","2","3","4","5"]);
-  const deductions = sum(["6","7","8"]);
+  const sumRaw = (codes: string[]) => codes.reduce((s, c) => s + (totals.get(c) || 0), 0);
+  const grossRevenue = sumRaw(["1","2","3","4","5"]);
+  const deductions = absOf(totals, "6","7","8");
   const netRevenue = grossRevenue - deductions;
-  const cogs = sum(["9","10","11","12","13","14","15","16"]);
+  const cogs = absOf(totals, "9","10","11","12","13","14","15","16");
   const grossMargin = netRevenue - cogs;
-  const opex = sum(["17","18","19","20","21","22","23","24","25","26","27","28","29"]);
+  const opex = absOf(totals, "17","18","19","20","21","22","23","24","25","26","27","28","29");
   const pocket = grossMargin - opex;
   return { grossRevenue, deductions, netRevenue, grossMargin, pocket };
 }
@@ -64,6 +82,8 @@ function WaterfallPage() {
   const referenceDate = `${referenceMonth}-01`;
   const callWaterfall = useServerFn(getWaterfall);
   const callCreateShare = useServerFn(createSharedLink);
+  const [viewMode, setViewMode] = useState<"aggregate" | "detail">("aggregate");
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareLabel, setShareLabel] = useState("");
@@ -167,12 +187,14 @@ function WaterfallPage() {
   const activeTotals = mode === COMPARE ? EMPTY : (totalsByBu.get(mode) ?? EMPTY);
   const activeSub = mode === COMPARE ? EMPTY : (subTotalsByBu.get(mode) ?? EMPTY);
 
-  // Apply sensitivity multipliers to deduction lines (6, 7, 8)
+  // Apply sensitivity multipliers to deduction lines (6, 7, 8).
+  // Normalise to positive magnitude first so the sign convention is consistent.
   const adjustedTotals = useMemo(() => {
     const m = new Map(activeTotals);
     for (const code of ["6", "7", "8"]) {
       const mult = multipliers[code] ?? 1;
-      if (mult !== 1) m.set(code, (activeTotals.get(code) || 0) * mult);
+      const base = Math.abs(activeTotals.get(code) || 0);
+      m.set(code, base * mult);
     }
     return m;
   }, [activeTotals, multipliers]);
@@ -184,7 +206,9 @@ function WaterfallPage() {
     let running = 0;
     return mainLines.map((l, idx) => {
       const raw = adjustedTotals.get(l.code) || 0;
-      const delta = l.bucket === "revenue" ? raw : -raw;
+      // Use magnitude for non-revenue lines; they may be stored positive or negative.
+      const val = l.bucket === "revenue" ? raw : Math.abs(raw);
+      const delta = l.bucket === "revenue" ? val : -val;
       const base = delta >= 0 ? running : running + delta;
       const bar = Math.abs(delta);
       const prev = running;
@@ -192,6 +216,19 @@ function WaterfallPage() {
       return { idx, code: l.code, name: `#${l.code}`, label: l.label || "", bucket: l.bucket, base, bar, delta, running, prevRunning: prev };
     });
   }, [mainLines, adjustedTotals]);
+
+  const aggregateChartData = useMemo(() => {
+    let running = 0;
+    return PL_GROUPS.map(g => {
+      const val = g.codes.reduce((s, code) => s + Math.abs(adjustedTotals.get(code) || 0), 0);
+      const delta = g.bucket === "revenue" ? val : -val;
+      const base = delta >= 0 ? running : running + delta;
+      const bar = Math.abs(delta);
+      const prev = running;
+      running += delta;
+      return { key: g.key, name: g.shortLabel, label: g.label, bucket: g.bucket, codes: [...g.codes], base, bar, delta, running, prevRunning: prev };
+    });
+  }, [adjustedTotals]);
 
   const baselineKpis = useMemo(() => kpisFor(activeTotals), [activeTotals]);
   const kpis = useMemo(() => kpisFor(adjustedTotals), [adjustedTotals]);
@@ -415,47 +452,128 @@ function WaterfallPage() {
           />
 
           <div className="bg-card border border-border">
-            <div className="px-8 py-5 border-b border-border flex items-center justify-between">
+            <div className="px-8 py-5 border-b border-border flex items-center justify-between flex-wrap gap-3">
               <h2 className="font-display text-xl text-primary">Waterfall principal — {labelOf(mode)}</h2>
-              <span className="text-xs text-muted-foreground uppercase tracking-[0.18em]">Receita → Deduções → Custos · linha mostra acumulado</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground uppercase tracking-[0.18em] hidden sm:inline">Receita → Deduções → Custos</span>
+                <div className="inline-flex border border-border">
+                  <button onClick={() => setViewMode("aggregate")}
+                    className={`px-4 py-1.5 text-xs uppercase tracking-[0.14em] font-semibold ${viewMode === "aggregate" ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}>
+                    P&L
+                  </button>
+                  <button onClick={() => setViewMode("detail")}
+                    className={`px-4 py-1.5 text-xs uppercase tracking-[0.14em] font-semibold ${viewMode === "detail" ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}>
+                    Detalhado
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="h-[520px] p-6">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={waterfallData} margin={{ top: 36, right: 30, left: 30, bottom: 30 }}>
-                  <CartesianGrid stroke="var(--stone)" strokeDasharray="2 4" vertical={false} />
-                  <XAxis dataKey="name" stroke="var(--soft)" tick={{ fontSize: 11 }} />
-                  <YAxis stroke="var(--soft)" tick={{ fontSize: 11 }} tickFormatter={(v: number) => fmtShort(v)} />
-                  <Tooltip
-                    cursor={{ fill: "var(--secondary)", opacity: 0.4 }}
-                    contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 0, fontSize: 12 }}
-                    formatter={(value: unknown, _name: unknown, props: { payload?: { delta?: number; label?: string; running?: number } }) => [
-                      `${fmt(Number(props.payload?.delta ?? value))}  ·  acum. ${fmt(props.payload?.running ?? 0)}`,
-                      props.payload?.label || "",
-                    ]}
-                  />
-                  <Bar dataKey="base" stackId="a" fill="transparent" isAnimationActive={false} />
-                  <Bar dataKey="bar" stackId="a" isAnimationActive={false}>
-                    {waterfallData.map((d) => (
-                      <Cell key={d.code} fill={colorFor(d.bucket)}
-                        onClick={() => { if (d.code === "7") setShowSub((v) => !v); }}
-                        style={{ cursor: d.code === "7" ? "pointer" : "default" }} />
-                    ))}
-                    <LabelList dataKey="delta" position="top" formatter={(v: unknown) => fmtShort(Number(v))}
-                      style={{ fontSize: 10, fill: "var(--ink)" }} />
-                  </Bar>
-                  <Line type="stepAfter" dataKey="running" stroke="var(--gold)" strokeWidth={1.5}
-                    dot={{ r: 2, fill: "var(--gold)", stroke: "var(--gold)" }} isAnimationActive={false} />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="px-8 py-4 border-t border-border flex items-center justify-between bg-secondary/40">
-              <button onClick={() => setShowSub(v => !v)}
-                className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] font-semibold text-primary">
-                {showSub ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                Linha #7 — Descontos comerciais (sublinhas 7.1–7.33)
-              </button>
-              <span className="text-xs text-muted-foreground">Clique também na barra #7 do gráfico</span>
-            </div>
+            {viewMode === "aggregate" ? (
+              <>
+                <div className="overflow-x-auto">
+                  <div style={{ minWidth: Math.max(700, aggregateChartData.length * 90) }}>
+                    <ComposedChart width={Math.max(700, aggregateChartData.length * 90)} height={420}
+                      data={aggregateChartData} margin={{ top: 36, right: 40, left: 40, bottom: 30 }}>
+                      <CartesianGrid stroke="var(--stone)" strokeDasharray="2 4" vertical={false} />
+                      <XAxis dataKey="name" stroke="var(--soft)" tick={{ fontSize: 11 }} />
+                      <YAxis stroke="var(--soft)" tick={{ fontSize: 11 }} tickFormatter={(v: number) => fmtShort(v)} />
+                      <Tooltip
+                        cursor={{ fill: "var(--secondary)", opacity: 0.4 }}
+                        contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 0, fontSize: 12 }}
+                        formatter={(value: unknown, _name: unknown, props: { payload?: { delta?: number; label?: string; running?: number } }) => [
+                          `${fmt(Math.abs(Number(props.payload?.delta ?? value)))}  ·  acum. ${fmt(props.payload?.running ?? 0)}`,
+                          props.payload?.label || "",
+                        ]}
+                      />
+                      <Bar dataKey="base" stackId="a" fill="transparent" isAnimationActive={false} />
+                      <Bar dataKey="bar" stackId="a" isAnimationActive={false}>
+                        {aggregateChartData.map((d) => (
+                          <Cell key={d.key} fill={colorFor(d.bucket)}
+                            onClick={() => setExpandedGroup(g => g === d.key ? null : d.key)}
+                            style={{ cursor: "pointer", opacity: expandedGroup === d.key ? 0.75 : 1 }} />
+                        ))}
+                        <LabelList dataKey="delta" position="top"
+                          formatter={(v: unknown) => fmtShort(Math.abs(Number(v)))}
+                          style={{ fontSize: 11, fill: "var(--ink)" }} />
+                      </Bar>
+                      <Line type="stepAfter" dataKey="running" stroke="var(--gold)" strokeWidth={1.5}
+                        dot={{ r: 3, fill: "var(--gold)", stroke: "var(--gold)" }} isAnimationActive={false} />
+                    </ComposedChart>
+                  </div>
+                </div>
+                {expandedGroup && (() => {
+                  const g = PL_GROUPS.find(g => g.key === expandedGroup);
+                  if (!g) return null;
+                  const gLines = mainLines.filter(l => (g.codes as readonly string[]).includes(l.code));
+                  return (
+                    <div className="border-t border-border bg-secondary/20">
+                      <div className="px-8 py-3 flex items-center justify-between border-b border-border">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">{g.label} — linhas individuais</p>
+                        <button onClick={() => setExpandedGroup(null)} className="text-xs text-muted-foreground hover:text-foreground uppercase tracking-[0.14em]">Fechar ×</button>
+                      </div>
+                      <table className="w-full text-sm">
+                        <tbody>
+                          {gLines.map(l => (
+                            <tr key={l.code} className="border-t border-border/60">
+                              <td className="px-8 py-2 font-mono text-xs text-muted-foreground w-12">#{l.code}</td>
+                              <td className="px-3 py-2 text-xs text-muted-foreground w-32">{l.category}</td>
+                              <td className="px-3 py-2">{l.label}</td>
+                              <td className="px-3 py-2 text-xs text-muted-foreground">{l.department || "—"}</td>
+                              <td className="px-8 py-2 text-right font-mono">{fmt(Math.abs(adjustedTotals.get(l.code) || 0))}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
+                <div className="px-8 py-3 border-t border-border text-xs text-muted-foreground bg-secondary/40">
+                  Clique numa barra para ver as linhas individuais do grupo · Alterne para "Detalhado" para ver todas as 29 linhas
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <div style={{ minWidth: Math.max(900, waterfallData.length * 55) }}>
+                    <ComposedChart width={Math.max(900, waterfallData.length * 55)} height={520}
+                      data={waterfallData} margin={{ top: 36, right: 30, left: 30, bottom: 30 }}>
+                      <CartesianGrid stroke="var(--stone)" strokeDasharray="2 4" vertical={false} />
+                      <XAxis dataKey="name" stroke="var(--soft)" tick={{ fontSize: 11 }} />
+                      <YAxis stroke="var(--soft)" tick={{ fontSize: 11 }} tickFormatter={(v: number) => fmtShort(v)} />
+                      <Tooltip
+                        cursor={{ fill: "var(--secondary)", opacity: 0.4 }}
+                        contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 0, fontSize: 12 }}
+                        formatter={(value: unknown, _name: unknown, props: { payload?: { delta?: number; label?: string; running?: number } }) => [
+                          `${fmt(Math.abs(Number(props.payload?.delta ?? value)))}  ·  acum. ${fmt(props.payload?.running ?? 0)}`,
+                          props.payload?.label || "",
+                        ]}
+                      />
+                      <Bar dataKey="base" stackId="a" fill="transparent" isAnimationActive={false} />
+                      <Bar dataKey="bar" stackId="a" isAnimationActive={false}>
+                        {waterfallData.map((d) => (
+                          <Cell key={d.code} fill={colorFor(d.bucket)}
+                            onClick={() => { if (d.code === "7") setShowSub((v) => !v); }}
+                            style={{ cursor: d.code === "7" ? "pointer" : "default" }} />
+                        ))}
+                        <LabelList dataKey="delta" position="top"
+                          formatter={(v: unknown) => fmtShort(Math.abs(Number(v)))}
+                          style={{ fontSize: 10, fill: "var(--ink)" }} />
+                      </Bar>
+                      <Line type="stepAfter" dataKey="running" stroke="var(--gold)" strokeWidth={1.5}
+                        dot={{ r: 2, fill: "var(--gold)", stroke: "var(--gold)" }} isAnimationActive={false} />
+                    </ComposedChart>
+                  </div>
+                </div>
+                <div className="px-8 py-4 border-t border-border flex items-center justify-between bg-secondary/40">
+                  <button onClick={() => setShowSub(v => !v)}
+                    className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] font-semibold text-primary">
+                    {showSub ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    Linha #7 — Descontos comerciais (sublinhas 7.1–7.33)
+                  </button>
+                  <span className="text-xs text-muted-foreground">Clique também na barra #7 do gráfico</span>
+                </div>
+              </>
+            )}
           </div>
 
           {showSub && (
@@ -757,7 +875,7 @@ function SensitivityPanel({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
         {targets.map(l => {
-          const base = baseTotals.get(l.code) || 0;
+          const base = Math.abs(baseTotals.get(l.code) || 0);
           const mult = multipliers[l.code] ?? 1;
           const adjusted = base * mult;
           const pctChange = (mult - 1) * 100;
