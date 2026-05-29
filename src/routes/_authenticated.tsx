@@ -2,6 +2,7 @@ import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart3, Upload, Network, Users, LogOut, TrendingDown, ShieldCheck, LineChart, History } from "lucide-react";
+import { CascataWordmark } from "@/components/brand/CascataWordmark";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
