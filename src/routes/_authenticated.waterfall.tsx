@@ -40,6 +40,10 @@ function WaterfallPage() {
   const [filterAccount, setFilterAccount] = useState<string>("");
   const [filterCustomer, setFilterCustomer] = useState<string>("");
   const [multipliers, setMultipliers] = useState<Record<string, number>>({ "6": 1, "7": 1, "8": 1 });
+  const [referenceMonth, setReferenceMonth] = useState<string>(() => {
+    const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const referenceDate = `${referenceMonth}-01`;
   const callWaterfall = useServerFn(getWaterfall);
 
   useEffect(() => {
@@ -58,7 +62,8 @@ function WaterfallPage() {
     leader: filterLeader || undefined,
     account: filterAccount || undefined,
     customerId: filterCustomer || undefined,
-  }), [filterDept, filterLeader, filterAccount, filterCustomer]);
+    referenceDate,
+  }), [filterDept, filterLeader, filterAccount, filterCustomer, referenceDate]);
 
   useEffect(() => {
     (async () => {
@@ -67,7 +72,7 @@ function WaterfallPage() {
         const wf = await callWaterfall({ data: { bu, ...filterArgs } });
         const totals = new Map(Object.entries(wf.totalsByCode));
         if (bu === "B2B") setTotalsB2B(totals); else setTotalsB2C(totals);
-        let q = supabase.from("line_inputs").select("line_code,value,customer_id,department").eq("bu", bu);
+        let q = supabase.from("line_inputs").select("line_code,value,customer_id,department").eq("bu", bu).eq("reference_date", referenceDate);
         if (filterArgs.department) q = q.eq("department", filterArgs.department);
         const { data: subs } = await q;
         // Build allowed customer ids matching account/leader/customer filters
@@ -297,6 +302,11 @@ function WaterfallPage() {
       </div>
 
       <div className="bg-card border border-border p-4 flex flex-wrap items-end gap-4">
+        <div className="flex flex-col gap-1">
+          <span className="eyebrow text-[10px]">Período</span>
+          <input type="month" value={referenceMonth} onChange={(e) => setReferenceMonth(e.target.value)}
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[160px] font-mono" />
+        </div>
         <div className="flex flex-col gap-1">
           <span className="eyebrow text-[10px]">Departamento</span>
           <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)}

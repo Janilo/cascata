@@ -61,6 +61,7 @@ export type Database = {
           line_code: string
           priority: string
           rateio_key: string | null
+          reference_date: string
           updated_at: string
           updated_by: string | null
           value: number | null
@@ -75,6 +76,7 @@ export type Database = {
           line_code: string
           priority?: string
           rateio_key?: string | null
+          reference_date?: string
           updated_at?: string
           updated_by?: string | null
           value?: number | null
@@ -89,6 +91,7 @@ export type Database = {
           line_code?: string
           priority?: string
           rateio_key?: string | null
+          reference_date?: string
           updated_at?: string
           updated_by?: string | null
           value?: number | null

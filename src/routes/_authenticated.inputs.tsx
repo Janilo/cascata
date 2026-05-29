@@ -33,6 +33,10 @@ function InputsPage() {
   const [inputs, setInputs] = useState<Array<{ line_code: string; customer_id: string; value: number | null; priority: string; department: string; ai_extraction: any }>>([]);
   const [bu, setBu] = useState<"B2B"|"B2C">("B2B");
   const [busy, setBusy] = useState<string | null>(null);
+  const [referenceMonth, setReferenceMonth] = useState<string>(() => {
+    const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const referenceDate = `${referenceMonth}-01`;
 
   useEffect(() => {
     (async () => {
@@ -44,10 +48,18 @@ function InputsPage() {
       setLines((ls as Line[]) || []);
       const { data: cs } = await supabase.from("customers").select("id,customer_name,bu").order("customer_name");
       setCustomers((cs as Customer[]) || []);
-      const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department,ai_extraction");
-      setInputs(ins || []);
     })();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      const { data: ins } = await supabase
+        .from("line_inputs")
+        .select("line_code,customer_id,value,priority,department,ai_extraction")
+        .eq("reference_date", referenceDate);
+      setInputs(ins || []);
+    })();
+  }, [referenceDate]);
 
   const myMainLines = useMemo(() => lines.filter(l => l.kind === "main" && l.department === dept), [lines, dept]);
   const subsByMain = useMemo(() => {
@@ -92,10 +104,13 @@ function InputsPage() {
   const saveValue = async (line_code: string, customer_id: string, value: number | null, priority: string) => {
     setBusy(`${line_code}:${customer_id}`);
     const { error } = await supabase.from("line_inputs").upsert({
-      line_code, customer_id, bu, department: dept, value, priority,
-    }, { onConflict: "line_code,customer_id,bu" });
+      line_code, customer_id, bu, department: dept, value, priority, reference_date: referenceDate,
+    }, { onConflict: "line_code,customer_id,bu,reference_date" });
     if (!error) {
-      const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department,ai_extraction");
+      const { data: ins } = await supabase
+        .from("line_inputs")
+        .select("line_code,customer_id,value,priority,department,ai_extraction")
+        .eq("reference_date", referenceDate);
       setInputs(ins || []);
     }
     setBusy(null);
@@ -120,9 +135,13 @@ function InputsPage() {
       await supabase.from("line_inputs").upsert({
         line_code: line.code, customer_id: m.customer_id, bu, department: dept,
         value: m.value, priority: "P1", file_path: path, ai_extraction: m,
-      }, { onConflict: "line_code,customer_id,bu" });
+        reference_date: referenceDate,
+      }, { onConflict: "line_code,customer_id,bu,reference_date" });
     }
-    const { data: ins } = await supabase.from("line_inputs").select("line_code,customer_id,value,priority,department,ai_extraction");
+    const { data: ins } = await supabase
+      .from("line_inputs")
+      .select("line_code,customer_id,value,priority,department,ai_extraction")
+      .eq("reference_date", referenceDate);
     setInputs(ins || []);
     setBusy(null);
   };
@@ -139,11 +158,18 @@ function InputsPage() {
         <p className="text-sm text-muted-foreground mt-2">Você vê e edita apenas as linhas do seu departamento. Outros departamentos veem totais agregados.</p>
       </div>
 
-      <div className="inline-flex border border-border">
-        {(["B2B","B2C"] as const).map(b => (
-          <button key={b} onClick={() => setBu(b)}
-            className={`px-6 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${bu===b ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>{b}</button>
-        ))}
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="inline-flex border border-border">
+          {(["B2B","B2C"] as const).map(b => (
+            <button key={b} onClick={() => setBu(b)}
+              className={`px-6 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${bu===b ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground hover:bg-secondary"}`}>{b}</button>
+          ))}
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="eyebrow text-[10px]">Período de referência</span>
+          <input type="month" value={referenceMonth} onChange={(e) => setReferenceMonth(e.target.value)}
+            className="border border-border bg-transparent px-3 py-2 text-xs min-w-[160px] font-mono" />
+        </div>
       </div>
 
       {/* Progress: dept */}

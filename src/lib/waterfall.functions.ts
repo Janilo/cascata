@@ -13,6 +13,7 @@ const Input = z.object({
   leader: z.string().optional(),
   account: z.string().optional(),
   customerId: z.string().optional(),
+  referenceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 const PRIORITY_ORDER = ["P1", "P2", "P3", "MANUAL", "RATEIO"] as const;
 
@@ -26,10 +27,16 @@ export const getWaterfall = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => Input.parse(d))
   .handler(async ({ data }) => {
-    const { bu, department, leader, account, customerId } = data;
+    const { bu, department, leader, account, customerId, referenceDate } = data;
+
+    const inputsQuery = supabaseAdmin
+      .from("line_inputs")
+      .select("line_code,customer_id,value,priority,bu,department,reference_date")
+      .eq("bu", bu);
+    if (referenceDate) inputsQuery.eq("reference_date", referenceDate);
 
     const [{ data: inputs }, { data: lines }, { data: orgNodesRaw }, { data: salaries }, { data: customers }] = await Promise.all([
-      supabaseAdmin.from("line_inputs").select("line_code,customer_id,value,priority,bu,department").eq("bu", bu),
+      inputsQuery,
       supabaseAdmin.from("waterfall_lines").select("code,department,kind,bucket,label,main_no,sub_no,sort_order"),
       supabaseAdmin.from("org_nodes").select("id,bu,department,leader,channel,account,customer").eq("bu", bu),
       supabaseAdmin.from("org_node_salaries").select("org_node_id,salary"),
