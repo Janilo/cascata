@@ -81,7 +81,7 @@ function LandingPage() {
           </Link>
           <Link
             to="/signup"
-            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 uppercase tracking-[0.18em] text-xs font-semibold hover:bg-[var(--purple-deep)] transition-colors"
+            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 uppercase tracking-[0.18em] text-xs font-semibold hover:bg-[var(--purple-deep)] transition-colors"
           >
             Criar conta <ArrowRight className="w-4 h-4" />
           </Link>
