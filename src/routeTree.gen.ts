@@ -17,7 +17,6 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as AuthenticatedWaterfallRouteImport } from './routes/_authenticated.waterfall'
-import { Route as AuthenticatedComparativoRouteImport } from './routes/_authenticated.comparativo'
 import { Route as AuthenticatedOrganogramaRouteImport } from './routes/_authenticated.organograma'
 import { Route as AuthenticatedInputsRouteImport } from './routes/_authenticated.inputs'
 import { Route as AuthenticatedCustoDeServirRouteImport } from './routes/_authenticated.custo-de-servir'
@@ -62,6 +61,11 @@ const ShareTokenRoute = ShareTokenRouteImport.update({
 const AuthenticatedWaterfallRoute = AuthenticatedWaterfallRouteImport.update({
   id: '/waterfall',
   path: '/waterfall',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedComparativoRoute = AuthenticatedComparativoRouteImport.update({
+  id: '/comparativo',
+  path: '/comparativo',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedOrganogramaRoute =
