@@ -462,7 +462,7 @@ function WaterfallPage() {
                     <td className="px-6 py-3 text-xs text-muted-foreground">{l.category}</td>
                     <td className="px-6 py-3">{l.label}</td>
                     <td className="px-6 py-3 text-xs">{l.department || "—"}</td>
-                    <td className="px-6 py-3 text-right font-mono">{fmt(activeTotals.get(l.code) || 0)}</td>
+                    <td className="px-6 py-3 text-right font-mono">{fmt(adjustedTotals.get(l.code) || 0)}</td>
                   </tr>
                 ))}
               </tbody>
