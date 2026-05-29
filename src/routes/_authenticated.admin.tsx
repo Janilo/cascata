@@ -141,7 +141,7 @@ function AdminPage() {
                   </select>
                 </td>
                 <td className="px-6 py-3">
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-wider rounded ${r.is_approved ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-wider rounded ${r.is_approved ? "pill-inflow" : "bg-muted text-muted-foreground"}`}>
                     {r.is_approved ? <><Check className="w-3 h-3" /> Sim</> : <><X className="w-3 h-3" /> Não</>}
                   </span>
                 </td>
