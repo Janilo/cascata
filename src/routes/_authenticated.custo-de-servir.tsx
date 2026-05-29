@@ -109,12 +109,12 @@ function Kpi({ label, value, accent, negative }: { label: string; value: number;
 
 function BucketBadge({ bucket }: { bucket: string | null }) {
   const m: Record<string, string> = {
-    revenue: "bg-emerald-100 text-emerald-900",
-    deduction: "bg-amber-100 text-amber-900",
-    cost: "bg-rose-100 text-rose-900",
+    revenue: "pill-inflow",
+    deduction: "pill-margin",
+    cost: "pill-outflow",
   };
   const label: Record<string, string> = { revenue: "Receita", deduction: "Dedução", cost: "Custo" };
-  return <span className={`inline-block px-2 py-0.5 text-[10px] uppercase tracking-wider rounded ${m[bucket || ""] || "bg-secondary"}`}>{label[bucket || ""] || bucket}</span>;
+  return <span className={`inline-block px-2 py-0.5 text-[10px] uppercase tracking-wider rounded-full ${m[bucket || ""] || "bg-secondary text-secondary-foreground"}`}>{label[bucket || ""] || bucket}</span>;
 }
 
 function fmt(n: number) {

@@ -180,7 +180,7 @@ function ComparativoPage() {
               <div className="flex items-baseline justify-between">
                 <p className="eyebrow">{monthLabel(k.month)}</p>
                 {i > 0 && (
-                  <span className={`text-xs font-mono ${delta >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                  <span className={`text-xs tabular ${delta >= 0 ? "delta-up" : "delta-down"}`}>
                     {delta >= 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(1)}pp
                   </span>
                 )}
@@ -272,7 +272,7 @@ function ComparativoPage() {
                       <td key={i} className="px-4 py-2 text-right font-mono">{v === 0 ? "—" : brl(v)}</td>
                     ))}
                     {periods.length > 1 && (
-                      <td className={`px-4 py-2 text-right font-mono ${delta === 0 ? "text-muted-foreground" : delta > 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                      <td className={`px-4 py-2 text-right tabular ${delta === 0 ? "delta-zero" : delta > 0 ? "delta-up" : "delta-down"}`}>
                         {first === 0 ? "—" : `${delta > 0 ? "+" : ""}${delta.toFixed(1)}%`}
                       </td>
                     )}
