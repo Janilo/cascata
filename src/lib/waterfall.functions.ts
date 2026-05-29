@@ -18,9 +18,9 @@ export const getWaterfall = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => Input.parse(d))
   .handler(async ({ data }) => {
-    const { lines: _l, subTotalsByCode: _s, ...rest } = await computeWaterfall(data);
-    void _l; void _s;
-    return rest;
+    const { subTotalsByCode: _s, ...rest } = await computeWaterfall(data);
+    void _s;
+    return rest; // includes totalsByCode, lines, salaryTotal, inputsCount
   });
 
 const TokenInput = z.object({ token: z.string().min(8).max(128).regex(/^[A-Za-z0-9_-]+$/) });

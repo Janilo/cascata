@@ -72,14 +72,9 @@ function WaterfallPage() {
   const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      const [{ data: ls }, { data: cs }] = await Promise.all([
-        supabase.from("waterfall_lines").select("*").order("sort_order"),
-        supabase.from("customers").select("id,customer_name,account_name,account_id,bu,attrs"),
-      ]);
-      setLines((ls as Line[]) || []);
-      setCustomers((cs as CustomerOpt[]) || []);
-    })();
+    // customers for filter dropdowns — may return empty for guest users (RLS), that's fine
+    supabase.from("customers").select("id,customer_name,account_name,account_id,bu,attrs")
+      .then(({ data: cs }) => setCustomers((cs as CustomerOpt[]) || []));
   }, []);
 
   const filterArgs = useMemo(() => ({
@@ -113,6 +108,8 @@ function WaterfallPage() {
       for (const b of need) {
         const wf = await callWaterfall({ data: { bu: b.code, ...filterArgs } });
         totalsNext.set(b.code, new Map(Object.entries(wf.totalsByCode)));
+        // Populate waterfall line definitions from the first server response (bypasses RLS)
+        if (wf.lines && wf.lines.length > 0) setLines(wf.lines as Line[]);
         let q = supabase.from("line_inputs").select("line_code,value,customer_id,department").eq("bu", b.code).eq("reference_date", referenceDate);
         if (filterArgs.department) q = q.eq("department", filterArgs.department);
         const { data: subs } = await q;
