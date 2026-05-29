@@ -5,6 +5,18 @@ import { lovable } from "@/integrations/lovable/index";
 
 export const Route = createFileRoute("/signup")({
   component: SignupPage,
+  head: () => ({
+    meta: [
+      { title: "Criar conta — Cascata" },
+      { name: "description", content: "Crie sua conta Cascata em 1 minuto. Cada departamento alimenta as linhas do waterfall que conhece, com aprovação por administrador." },
+      { property: "og:title", content: "Criar conta — Cascata" },
+      { property: "og:description", content: "Crie sua conta Cascata em 1 minuto e abra o price waterfall por cliente." },
+      { property: "og:url", content: "https://cascata.pereirasaraiva.com/signup" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://cascata.pereirasaraiva.com/signup" },
+    ],
+  }),
 });
 
 function SignupPage() {
