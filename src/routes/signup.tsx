@@ -13,6 +13,9 @@ export const Route = createFileRoute("/signup")({
       { property: "og:title", content: "Criar conta — Cascata" },
       { property: "og:description", content: "Crie sua conta Cascata em 1 minuto e abra o price waterfall por cliente." },
       { property: "og:url", content: "https://cascata.pereirasaraiva.com/signup" },
+      { property: "og:image", content: "/og-social.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/og-social.png" },
     ],
     links: [
       { rel: "canonical", href: "https://cascata.pereirasaraiva.com/signup" },
@@ -86,6 +89,12 @@ function SignupPage() {
 
           <p className="mt-6 text-sm text-muted-foreground">
             Já tem conta? <Link to="/login" className="text-primary underline underline-offset-4">Entrar</Link>
+          </p>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Ao criar uma conta você concorda com os{" "}
+            <Link to="/termos" className="underline underline-offset-2 hover:text-foreground">Termos de Uso</Link>{" "}
+            e a{" "}
+            <Link to="/privacidade" className="underline underline-offset-2 hover:text-foreground">Política de Privacidade</Link>.
           </p>
         </form>
       </main>
