@@ -34,6 +34,17 @@ export default tseslint.config(
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Literal[value=/hsl\\(var\\(/]",
+          message: "Tokens Cascata são hex — use var(--token) direto, nunca hsl(var(--token)).",
+        },
+        {
+          selector: "TemplateLiteral > TemplateElement[value.raw=/hsl\\(var\\(/]",
+          message: "Tokens Cascata são hex — use var(--token) direto, nunca hsl(var(--token)).",
+        },
+      ],
     },
   },
   eslintPluginPrettier,
