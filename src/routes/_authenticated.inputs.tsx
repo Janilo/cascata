@@ -13,19 +13,14 @@ type Line = { code: string; label: string | null; department: string | null; p1_
 type Customer = { id: string; customer_name: string; bu: string };
 
 const DEPT_COLORS: Record<string, string> = {
-  "Comercial": "#4A1942",
-  "PS": "#2E5D4F",
-  "Produto": "#0F2940",
-  "Fiscal": "#C9A227",
-  "Financeiro": "#7d3c98",
-  "Tech/Infra": "#2980b9",
-  "CS": "#16a085",
-  "Suporte": "#8e44ad",
-  "PS/Onboarding": "#27ae60",
-  "Marketing": "#d35400",
-  "Engenharia": "#34495e",
-  "G&A": "#94908A",
+  "Comercial":   "var(--cascata-navy)",
+  "PS":          "var(--cascata-gold)",
+  "Produto":     "var(--cascata-steel)",
+  "Fiscal":      "var(--cascata-inflow)",
+  "Financeiro":  "var(--cascata-outflow)",
+  "Tech/Infra":  "var(--navy-deep)",
 };
+const DEPT_FALLBACK = "var(--cascata-mute)";
 
 function InputsPage() {
   const [dept, setDept] = useState<string>("");
@@ -99,7 +94,7 @@ function InputsPage() {
       if (!buCustomers.some(c => c.id === i.customer_id)) continue;
       cur.filled += 1;
     }
-    return Array.from(m.entries()).map(([d, v]) => ({ dept: d, ...v, color: DEPT_COLORS[d] || "#888" }));
+    return Array.from(m.entries()).map(([d, v]) => ({ dept: d, ...v, color: DEPT_COLORS[d] ?? DEPT_FALLBACK }));
   }, [lines, inputs, buCustomers]);
 
   const globalTotal = allByDept.reduce((s,d) => s + d.total, 0);
@@ -343,7 +338,7 @@ function ConfidenceBadge({ ext }: { ext: any }) {
   if (c < 0.7) {
     return (
       <span title={`Confiança da IA: ${(c * 100).toFixed(0)}%`}
-        className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] font-semibold bg-[hsl(var(--cascata-outflow)/0.15)] text-[hsl(var(--cascata-outflow))] border border-[hsl(var(--cascata-outflow)/0.4)]">
+        className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] font-semibold pill-outflow border border-[var(--cascata-outflow)]/30">
         Revisar · {(c * 100).toFixed(0)}%
       </span>
     );

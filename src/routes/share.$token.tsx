@@ -40,7 +40,7 @@ function SharedWaterfallPage() {
   if (err) return (
     <div className="min-h-screen flex items-center justify-center p-10">
       <div className="max-w-md text-center">
-        <p className="eyebrow text-[hsl(var(--cascata-outflow))]">Link indisponível</p>
+        <p className="eyebrow text-outflow">Link indisponível</p>
         <h1 className="font-display text-3xl text-primary mt-3">{err}</h1>
         <p className="text-sm text-muted-foreground mt-3">Solicite um novo link de visualização ao remetente.</p>
       </div>
@@ -111,7 +111,7 @@ function SharedWaterfallPage() {
         <div className="border border-border bg-card p-4">
           <ResponsiveContainer width="100%" height={420}>
             <BarChart data={bars} margin={{ top: 20, right: 20, left: 0, bottom: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" />
               <YAxis tickFormatter={(v) => compact(Number(v))} tick={{ fontSize: 10 }} />
               <Tooltip formatter={(v) => brl(Number(v))} labelFormatter={(_, p) => p?.[0]?.payload?.label || ""} />
