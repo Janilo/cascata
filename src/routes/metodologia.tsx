@@ -10,6 +10,9 @@ export const Route = createFileRoute("/metodologia")({
       { property: "og:title", content: "Metodologia — Cascata" },
       { property: "og:description", content: "As 29 linhas do waterfall, os três níveis de precisão (P1, P2, P3) e o rateio de salário pelo organograma." },
       { property: "og:url", content: "https://cascata.pereirasaraiva.com/metodologia" },
+      { property: "og:image", content: "/og-social.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/og-social.png" },
     ],
     links: [
       { rel: "canonical", href: "https://cascata.pereirasaraiva.com/metodologia" },

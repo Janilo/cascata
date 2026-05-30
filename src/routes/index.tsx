@@ -211,7 +211,10 @@ function LandingPage() {
           </div>
           <div className="flex items-center justify-between py-5">
             <span>Cascata · 2026</span>
-            <span className="uppercase tracking-[0.18em]">Price waterfall · IA · P&L por cliente</span>
+            <div className="flex items-center gap-6 uppercase tracking-[0.18em]">
+              <Link to="/privacidade" className="hover:text-foreground transition-colors">Privacidade</Link>
+              <Link to="/termos" className="hover:text-foreground transition-colors">Termos</Link>
+            </div>
           </div>
         </div>
       </footer>

@@ -5,6 +5,9 @@ import { BarChart3, Upload, Network, Users, LogOut, TrendingDown, ShieldCheck, L
 import { CascataWordmark } from "@/components/brand/CascataWordmark";
 
 export const Route = createFileRoute("/_authenticated")({
+  head: () => ({
+    meta: [{ name: "robots", content: "noindex, nofollow" }],
+  }),
   beforeLoad: async ({ location }) => {
     if (typeof window === "undefined") return;
     const { data, error } = await supabase.auth.getUser();
