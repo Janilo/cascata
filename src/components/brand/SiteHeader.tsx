@@ -3,10 +3,10 @@ import { CascataWordmark } from "@/components/brand/CascataWordmark";
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-      <div className="mx-auto max-w-6xl px-6 md:px-10 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to="/" aria-label="Cascata — início">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-5">
+        <div className="inline-flex items-center gap-3">
+          <Link to="/" aria-label="Cascata — início" className="inline-flex items-center hover:opacity-80 transition-opacity">
             <CascataWordmark height={28} />
           </Link>
           <a
@@ -21,19 +21,19 @@ export function SiteHeader() {
         <nav className="flex items-center gap-6 sm:gap-8">
           <Link
             to="/metodologia"
-            className="hidden sm:inline text-foreground hover:text-primary uppercase tracking-[0.18em] text-xs font-semibold"
+            className="hidden sm:inline text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-opacity hover:opacity-70"
           >
             Metodologia
           </Link>
           <Link
             to="/login"
-            className="text-foreground hover:text-primary uppercase tracking-[0.18em] text-xs font-semibold"
+            className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-opacity hover:opacity-70"
           >
             Entrar
           </Link>
           <Link
             to="/signup"
-            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 uppercase tracking-[0.18em] text-xs font-semibold hover:bg-[var(--purple-deep)] transition-colors"
+            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] hover:bg-[var(--purple-deep)] transition-colors"
           >
             Criar conta <span aria-hidden>→</span>
           </Link>
