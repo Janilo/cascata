@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { GUEST_EMAIL } from "@/lib/config";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -90,6 +91,12 @@ function kpisFor(totals: Map<string, number>): Kpis {
 function WaterfallPage() {
   const { bus, labelOf, colorOf } = useBusinessUnits();
   const [mode, setMode] = useState<string>("B2B");
+  const [isGuest, setIsGuest] = useState(false);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setIsGuest(data.user?.email === GUEST_EMAIL);
+    });
+  }, []);
   useEffect(() => {
     if (bus.length && mode !== COMPARE && !bus.find(b => b.code === mode)) setMode(bus[0].code);
   }, [bus, mode]);
@@ -389,7 +396,28 @@ function WaterfallPage() {
   };
 
   return (
-    <div className="p-10 space-y-10">
+    <>
+      {isGuest && (
+        <div className="border-b border-primary/20 bg-primary/5">
+          <div className="mx-auto max-w-6xl px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-primary">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              </span>
+              <span className="font-mono uppercase tracking-wider">Demo-ready</span>
+              <span className="text-muted-foreground hidden sm:inline">· 5 clientes fictícios, waterfall com drill-down, pronto para apresentar</span>
+            </div>
+            <Link
+              to="/signup"
+              className="rounded-sm border border-primary/40 bg-background px-2.5 py-1 font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              Rodar com meus dados →
+            </Link>
+          </div>
+        </div>
+      )}
+      <div className="p-10 space-y-10">
       <div className="flex items-end justify-between flex-wrap gap-6">
         <div>
           <p className="eyebrow">PRICE WATERFALL</p>
@@ -752,7 +780,8 @@ function WaterfallPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
