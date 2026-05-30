@@ -495,7 +495,7 @@ function WaterfallPage() {
                     {fmt(k.v)}
                   </p>
                   {isAdjusted && Math.abs(d) > 0.5 && (
-                    <p className={`mt-2 text-xs font-mono ${d >= 0 ? "text-[hsl(var(--cascata-inflow))]" : "text-[hsl(var(--cascata-outflow))]"}`}>
+                    <p className={`mt-2 text-xs font-mono ${d >= 0 ? "delta-up" : "delta-down"}`}>
                       {d >= 0 ? "▲" : "▼"} {fmtShort(d)} ({pct >= 0 ? "+" : ""}{pct.toFixed(1)}%)
                     </p>
                   )}
@@ -912,7 +912,7 @@ function SensitivityPanel({
           {isAdjusted && (
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Δ Pocket Margin</p>
-              <p className={`font-display text-lg ${pocketDelta >= 0 ? "text-[hsl(var(--cascata-inflow))]" : "text-[hsl(var(--cascata-outflow))]"}`}>
+              <p className={`font-display text-lg ${pocketDelta >= 0 ? "delta-up" : "delta-down"}`}>
                 {pocketDelta >= 0 ? "+" : ""}{brl(pocketDelta)}
               </p>
             </div>
@@ -933,7 +933,7 @@ function SensitivityPanel({
             <div key={l.code} className="bg-card p-6 space-y-3">
               <div className="flex items-baseline justify-between">
                 <p className="text-xs font-mono text-muted-foreground">#{l.code}</p>
-                <span className={`text-xs font-mono font-semibold ${pctChange === 0 ? "text-muted-foreground" : pctChange < 0 ? "text-[hsl(var(--cascata-inflow))]" : "text-[hsl(var(--cascata-outflow))]"}`}>
+                <span className={`text-xs font-mono font-semibold ${pctChange === 0 ? "text-muted-foreground" : pctChange < 0 ? "delta-up" : "delta-down"}`}>
                   {pctChange > 0 ? "+" : ""}{pctChange.toFixed(0)}%
                 </span>
               </div>
@@ -942,7 +942,7 @@ function SensitivityPanel({
                 type="range" min={-50} max={50} step={1}
                 value={Math.round(pctChange)}
                 onChange={(e) => setMult(l.code, 1 + Number(e.target.value) / 100)}
-                className="w-full accent-[hsl(var(--cascata-gold))]"
+                className="w-full accent-gold"
               />
               <div className="flex items-baseline justify-between text-xs">
                 <span className="text-muted-foreground">Base</span>

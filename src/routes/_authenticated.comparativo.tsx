@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Plus, X } from "lucide-react";
 import { getWaterfall } from "@/lib/waterfall.functions";
 import { useBusinessUnits } from "@/hooks/use-business-units";
@@ -203,18 +203,17 @@ function ComparativoPage() {
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis yAxisId="left" tickFormatter={compact} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${v}%`} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} />
+              <YAxis yAxisId="left" tickFormatter={compact} stroke="var(--muted-foreground)" fontSize={12} />
+              <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${v}%`} stroke="var(--muted-foreground)" fontSize={12} />
               <Tooltip
                 formatter={(value, name) => name === "Pocket %" ? `${value}%` : brl(Number(value))}
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }}
               />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line yAxisId="left" type="monotone" dataKey="Receita Líquida" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
-              <Line yAxisId="left" type="monotone" dataKey="Margem Bruta" stroke="hsl(var(--chart-2, 200 70% 40%))" strokeWidth={2} dot={{ r: 4 }} />
-              <Line yAxisId="right" type="monotone" dataKey="Pocket %" stroke="hsl(var(--chart-3, 40 80% 50%))" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 4 }} />
+              <Line yAxisId="left" type="monotone" dataKey="Receita Líquida" stroke="var(--chart-1)" strokeWidth={2} dot={false} />
+              <Line yAxisId="left" type="monotone" dataKey="Margem Bruta" stroke="var(--chart-2)" strokeWidth={2} dot={false} />
+              <Line yAxisId="right" type="monotone" dataKey="Pocket %" stroke="var(--chart-3)" strokeWidth={2} strokeDasharray="5 4" dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -226,14 +225,14 @@ function ComparativoPage() {
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis tickFormatter={compact} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} />
+              <YAxis tickFormatter={compact} stroke="var(--muted-foreground)" fontSize={12} />
               <Tooltip
                 formatter={(value) => brl(Number(value))}
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }}
               />
-              <Bar dataKey="Receita Líquida" fill="hsl(var(--primary))" />
+              <Bar dataKey="Receita Líquida" fill="var(--chart-1)" />
             </BarChart>
           </ResponsiveContainer>
         </div>

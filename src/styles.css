@@ -73,7 +73,9 @@
   --color-steel: var(--steel);
   --color-green: var(--inflow);
   --color-inflow: var(--inflow);
+  --color-inflow-soft: var(--cascata-inflow-soft);
   --color-outflow: var(--outflow);
+  --color-outflow-soft: var(--cascata-outflow-soft);
   --color-cream: var(--paper);
   --color-paper: var(--paper);
   --color-mist: var(--mist);

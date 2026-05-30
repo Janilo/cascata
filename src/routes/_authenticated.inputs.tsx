@@ -343,7 +343,7 @@ function ConfidenceBadge({ ext }: { ext: any }) {
   if (c < 0.7) {
     return (
       <span title={`Confiança da IA: ${(c * 100).toFixed(0)}%`}
-        className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] font-semibold bg-[hsl(var(--cascata-outflow)/0.15)] text-[hsl(var(--cascata-outflow))] border border-[hsl(var(--cascata-outflow)/0.4)]">
+        className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] font-semibold pill-outflow border border-[var(--cascata-outflow)]/30">
         Revisar · {(c * 100).toFixed(0)}%
       </span>
     );
