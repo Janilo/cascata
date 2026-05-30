@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart3, Upload, Network, Users, LogOut, TrendingDown, ShieldCheck, LineChart, History } from "lucide-react";
 import { CascataWordmark } from "@/components/brand/CascataWordmark";
+import { ADMIN_EMAIL } from "@/lib/config";
 
 export const Route = createFileRoute("/_authenticated")({
   head: () => ({
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/_authenticated")({
       supabase.from("profiles").select("is_approved").eq("id", data.user.id).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", data.user.id),
     ]);
-    const isAdmin = (roles || []).some((r) => r.role === "admin") || data.user.email === "janilo@pereirasaraiva.com";
+    const isAdmin = (roles || []).some((r) => r.role === "admin") || data.user.email === ADMIN_EMAIL;
     if (!isAdmin && !profile?.is_approved) {
       throw redirect({ to: "/aguardando-aprovacao" });
     }
@@ -41,7 +42,7 @@ function AuthLayout() {
       setName(p?.full_name || u.user.email || "");
       setDept(p?.department || "");
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
-      setIsAdmin((roles || []).some(r => r.role === "admin") || u.user.email === "janilo@pereirasaraiva.com");
+      setIsAdmin((roles || []).some(r => r.role === "admin") || u.user.email === ADMIN_EMAIL);
     })();
   }, []);
 
