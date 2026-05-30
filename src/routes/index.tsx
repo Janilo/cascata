@@ -6,6 +6,7 @@ import { CascataWordmark } from "@/components/brand/CascataWordmark";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { enterAsGuestFn } from "@/lib/auth.functions";
+import { BrandFooter } from "@/components/brand/BrandFooter";
 
 export const Route = createFileRoute("/")({
   component: LandingPage,
@@ -201,23 +202,7 @@ function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-border text-xs text-muted-foreground">
-        <div className="mx-auto max-w-6xl px-6 md:px-10">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-5 border-b border-border uppercase tracking-[0.18em]">
-            <span className="font-semibold">Outros produtos</span>
-            <a href="https://prisma.pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Prisma <span className="opacity-50">· Marketing Mix Modeling</span></a>
-            <a href="https://lente.pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Lente <span className="opacity-50">· Pesquisa Qualitativa</span></a>
-            <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">pereirasaraiva.com</a>
-          </div>
-          <div className="flex items-center justify-between py-5">
-            <span>Cascata · 2026</span>
-            <div className="flex items-center gap-6 uppercase tracking-[0.18em]">
-              <Link to="/privacidade" className="hover:text-foreground transition-colors">Privacidade</Link>
-              <Link to="/termos" className="hover:text-foreground transition-colors">Termos</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <BrandFooter />
     </div>
   );
 }
