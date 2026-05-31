@@ -85,7 +85,7 @@ function DemoPage() {
               <span className="relative inline-flex h-2 w-2 rounded-full bg-[color:var(--cascata-navy)]" />
             </span>
             <span className="font-mono uppercase tracking-wider">Demo-ready</span>
-            <span className="text-muted-foreground hidden sm:inline">· waterfall montado com 5 clientes fictícios · somente leitura</span>
+            <span className="text-muted-foreground hidden sm:inline">· Não precisa de cadastro</span>
           </div>
           <Link
             to="/signup"
@@ -210,7 +210,7 @@ function DemoPage() {
                   <Eye className="w-4 h-4" />
                   {loadingGuest ? "Entrando…" : "Entrar como convidado"}
                 </button>
-                <p className="text-[10px] text-muted-foreground font-mono">5 clientes fictícios · somente leitura</p>
+                <p className="text-[10px] text-muted-foreground font-mono">Não precisa de cadastro</p>
               </div>
               <Link
                 to="/signup"
