@@ -65,7 +65,7 @@ function LandingPage() {
       <main className="flex-1">
         {/* Hero */}
         <section className="py-24">
-          <div className="mx-auto max-w-5xl px-6 md:px-10">
+          <div className="mx-auto max-w-5xl px-6">
             <p className="eyebrow mb-8">Pricing · Waterfall</p>
             <h1
               className="font-display italic font-normal text-[color:var(--cascata-ink)] mb-10"
@@ -115,7 +115,7 @@ function LandingPage() {
 
         {/* O que você recebe */}
         <section className="border-t border-border bg-card/40 py-20">
-          <div className="mx-auto max-w-5xl px-6 md:px-10">
+          <div className="mx-auto max-w-5xl px-6">
             <div className="flex items-end justify-between gap-8 mb-10">
               <div>
                 <p className="eyebrow">O que você recebe</p>
@@ -178,7 +178,7 @@ function LandingPage() {
 
         {/* Antes / depois */}
         <section className="border-t border-border py-20">
-          <div className="mx-auto max-w-5xl px-6 md:px-10">
+          <div className="mx-auto max-w-5xl px-6">
             <p className="eyebrow">Antes / depois</p>
             <h2
               className="mt-4 font-display italic font-normal text-[color:var(--cascata-ink)] text-4xl md:text-5xl leading-[1.05] max-w-3xl"
@@ -222,7 +222,7 @@ function LandingPage() {
 
         {/* Método */}
         <section className="border-t border-border py-20 bg-card/40">
-          <div className="mx-auto max-w-5xl px-6 md:px-10">
+          <div className="mx-auto max-w-5xl px-6">
             <p className="eyebrow mb-10">Método</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
               {[
