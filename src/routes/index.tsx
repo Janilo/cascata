@@ -82,7 +82,7 @@ function LandingPage() {
             <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mb-12">
               Cada departamento alimenta as linhas que conhece. A IA lê os arquivos enviados, identifica os campos por cliente, e o price waterfall se monta — com drill-down nos 33 tipos de desconto comercial e separação por BU.
             </p>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-start gap-3">
               <Link
                 to="/signup"
                 className="inline-flex items-center justify-center gap-2 h-10 px-8 text-xs font-semibold uppercase tracking-[0.18em] bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
@@ -105,7 +105,7 @@ function LandingPage() {
               </div>
               <Link
                 to="/login"
-                className="inline-flex items-center h-10 text-xs font-semibold uppercase tracking-[0.18em] text-foreground/70 hover:text-foreground transition-colors"
+                className="inline-flex items-center self-start mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-foreground/70 hover:text-foreground transition-colors"
               >
                 Entrar
               </Link>

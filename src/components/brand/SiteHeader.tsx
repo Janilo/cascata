@@ -5,9 +5,9 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70 h-[var(--header-height)]">
       <div className="mx-auto max-w-6xl px-8 h-full flex items-center justify-between">
-        <div className="flex items-baseline gap-3">
+        <div className="flex items-center gap-3 h-8">
           <Link to="/" aria-label="Cascata — início">
-            <CascataWordmark height={28} className="block" />
+            <CascataWordmark height={22} className="block" />
           </Link>
           <a
             href="https://pereirasaraiva.com"
