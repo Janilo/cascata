@@ -1,10 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { Eye } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { enterAsGuestFn } from "@/lib/auth.functions";
+import {
+  ComposedChart, Bar, Cell, Line, CartesianGrid,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, LabelList,
+} from "recharts";
 import { BrandFooter } from "@/components/brand/BrandFooter";
 import { SiteHeader } from "@/components/brand/SiteHeader";
 
@@ -15,9 +14,36 @@ export const Route = createFileRoute("/demo")({
       { title: "Demo — Cascata · Price Waterfall" },
       { name: "description", content: "Veja o Cascata em ação: waterfall de receita bruta ao custo de servir, por cliente, com drill-down nos descontos comerciais." },
       { name: "robots", content: "noindex" },
+      { property: "og:title", content: "Demo — Cascata · Price Waterfall" },
+      { property: "og:description", content: "Waterfall do bruto ao custo de servir. Cinco clientes B2B, dados fictícios." },
+      { property: "og:image", content: "/og-social.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/og-social.png" },
     ],
   }),
 });
+
+// ── types ─────────────────────────────────────────────────────────────────
+
+type WLine = {
+  n: string;
+  label: string;
+  value: number | null;
+  type: "root" | "sub" | "total" | "drill";
+  bucket: "revenue" | "deduction" | "cost" | "total";
+};
+
+type ChartRow = {
+  id: string;
+  name: string;
+  label: string;
+  bucket: "revenue" | "deduction" | "cost" | "total";
+  base: number;
+  bar: number;
+  running: number;
+};
+
+// ── per-client datasets ───────────────────────────────────────────────────
 
 const CLIENTS = [
   "Acme Distribuidora",
@@ -27,21 +53,46 @@ const CLIENTS = [
   "Estela Agro",
 ];
 
-const WATERFALL = [
-  { n: "P0",  label: "Receita bruta",                       value:  1_850_000, type: "root"  },
-  { n: "P1",  label: "Desconto de volume",                   value:   -185_000, type: "sub"   },
-  { n: "P2",  label: "Desconto financeiro",                  value:    -55_500, type: "sub"   },
-  { n: "P3",  label: "Bonificação",                         value:    -37_000, type: "sub"   },
-  { n: "R1",  label: "Receita líquida 1",                    value:  1_572_500, type: "total" },
-  { n: "P4",  label: "Frete e logística",                    value:    -92_500, type: "sub"   },
-  { n: "P5",  label: "Impostos sobre vendas",                value:   -277_500, type: "sub"   },
-  { n: "P6",  label: "Custo da mercadoria vendida",          value:   -740_000, type: "sub"   },
-  { n: "P7",  label: "Margem bruta",                         value:    462_500, type: "total" },
-  { n: "↳",   label: "33 sublinhas de desconto comercial…", value:       null, type: "drill" },
-  { n: "P8",  label: "Comissão de vendas",                   value:    -46_250, type: "sub"   },
-  { n: "P9",  label: "Custo de atendimento",                 value:    -27_750, type: "sub"   },
-  { n: "P10", label: "Custo de servir",                      value:    388_500, type: "total" },
+function makeLines(
+  rb: number,
+  dv: number, df: number, bn: number,
+  fr: number, im: number, cmv: number,
+  cs: number, ca: number,
+): WLine[] {
+  const rl1    = rb + dv + df + bn;
+  const mb     = rl1 + fr + im + cmv;
+  const pocket = mb + cs + ca;
+  return [
+    { n: "P0",  label: "Receita bruta",                       value: rb,     type: "root",  bucket: "revenue"   },
+    { n: "P1",  label: "Desconto de volume",                   value: dv,     type: "sub",   bucket: "deduction" },
+    { n: "P2",  label: "Desconto financeiro",                  value: df,     type: "sub",   bucket: "deduction" },
+    { n: "P3",  label: "Bonificação",                         value: bn,     type: "sub",   bucket: "deduction" },
+    { n: "R1",  label: "Receita líquida 1",                    value: rl1,    type: "total", bucket: "total"     },
+    { n: "P4",  label: "Frete e logística",                    value: fr,     type: "sub",   bucket: "cost"      },
+    { n: "P5",  label: "Impostos sobre vendas",                value: im,     type: "sub",   bucket: "cost"      },
+    { n: "P6",  label: "Custo da mercadoria vendida",          value: cmv,    type: "sub",   bucket: "cost"      },
+    { n: "P7",  label: "Margem bruta",                         value: mb,     type: "total", bucket: "total"     },
+    { n: "↳",   label: "33 sublinhas de desconto comercial…", value: null,   type: "drill", bucket: "deduction" },
+    { n: "P8",  label: "Comissão de vendas",                   value: cs,     type: "sub",   bucket: "cost"      },
+    { n: "P9",  label: "Custo de atendimento",                 value: ca,     type: "sub",   bucket: "cost"      },
+    { n: "P10", label: "Custo de servir",                      value: pocket, type: "total", bucket: "total"     },
+  ];
+}
+
+const CLIENTS_DATA: WLine[][] = [
+  // Acme Distribuidora — base
+  makeLines(1_850_000, -185_000,  -55_500,  -37_000,  -92_500, -277_500,   -740_000,  -46_250,  -27_750),
+  // Bolt Industries — menor escala, descontos maiores
+  makeLines(1_100_000, -143_000,  -33_000,  -22_000,  -72_000, -171_000,   -506_000,  -18_000,  -12_000),
+  // Corvin Textil — porte médio-grande, margens apertadas
+  makeLines(2_400_000, -264_000,  -72_000,  -48_000, -161_280, -342_720, -1_008_000,  -60_480,  -40_320),
+  // Delta Pharma — maior porte, menores deduções
+  makeLines(3_200_000, -256_000,  -64_000,  -32_000, -199_360, -512_640, -1_140_000,  -99_600,  -59_760),
+  // Estela Agro — menor porte
+  makeLines(  820_000,  -90_200,  -16_400,  -24_600,  -55_104, -116_896,   -344_400,  -20_688,  -13_792),
 ];
+
+// ── utilities ────────────────────────────────────────────────────────────
 
 function fmtBRL(v: number) {
   const abs = Math.abs(v);
@@ -51,26 +102,107 @@ function fmtBRL(v: number) {
   return v < 0 ? `−${s}` : s;
 }
 
-function DemoPage() {
-  const navigate = useNavigate();
-  const [activeClient, setActiveClient] = useState(0);
-  const [loadingGuest, setLoadingGuest] = useState(false);
-  const enterAsGuest = useServerFn(enterAsGuestFn);
+function fmtShort(n: number) {
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return `R$ ${(n / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `R$ ${(n / 1_000).toFixed(0)}k`;
+  return `R$ ${n.toFixed(0)}`;
+}
 
-  const handleGuestEntry = async () => {
-    setLoadingGuest(true);
-    try {
-      const session = await enterAsGuest();
-      const { error } = await supabase.auth.setSession(session);
-      if (error) throw error;
-      navigate({ to: "/waterfall" });
-    } catch (e) {
-      toast.error("Não foi possível entrar como convidado", {
-        description: e instanceof Error ? e.message : undefined,
-      });
-      setLoadingGuest(false);
+function buildChartRows(lines: WLine[]): ChartRow[] {
+  let running = 0;
+  const rows: ChartRow[] = [];
+  for (const l of lines) {
+    if (l.type === "drill" || l.value === null) continue;
+    if (l.type === "root") {
+      running += l.value;
+      rows.push({ id: l.n, name: l.n, label: l.label, bucket: "revenue", base: 0, bar: l.value, running });
+    } else if (l.type === "sub") {
+      const delta = l.value;
+      const base  = delta < 0 ? running + delta : running;
+      running += delta;
+      rows.push({ id: l.n, name: l.n, label: l.label, bucket: l.bucket, base, bar: Math.abs(delta), running });
+    } else {
+      // milestone — does not advance running
+      rows.push({ id: l.n, name: l.n, label: l.label, bucket: "total", base: 0, bar: running, running });
     }
-  };
+  }
+  return rows;
+}
+
+const colorFor = (bucket: ChartRow["bucket"]) =>
+  bucket === "revenue" ? "var(--marine)"  :
+  bucket === "total"   ? "var(--gold)"    :
+                         "var(--outflow)";
+
+// ── WaterfallChart ────────────────────────────────────────────────────────
+
+function WaterfallChart({ data }: { data: ChartRow[] }) {
+  return (
+    <div className="h-72">
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={data} margin={{ top: 16, right: 12, left: 4, bottom: 44 }}>
+          <CartesianGrid strokeDasharray="2 4" vertical={false} stroke="var(--stone)" />
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 9 }}
+            interval={0}
+            angle={-40}
+            textAnchor="end"
+            height={52}
+            stroke="var(--soft)"
+          />
+          <YAxis
+            tick={{ fontSize: 10 }}
+            tickFormatter={fmtShort}
+            width={76}
+            stroke="var(--soft)"
+          />
+          <Tooltip
+            cursor={{ fill: "var(--secondary)", opacity: 0.4 }}
+            contentStyle={{ fontSize: 12, border: "1px solid var(--stone)", borderRadius: 0, background: "var(--card)" }}
+            formatter={(_v: unknown, _n: unknown, props: { payload?: ChartRow }) => {
+              const row = props.payload;
+              if (!row) return ["—", ""];
+              if (row.bucket === "total") return [fmtBRL(row.running), row.label];
+              return [`${fmtBRL(row.bar)} · acum. ${fmtBRL(row.running)}`, row.label];
+            }}
+          />
+          <Bar dataKey="base" stackId="a" fill="transparent" isAnimationActive={false} />
+          <Bar dataKey="bar" stackId="a" isAnimationActive={false}>
+            {data.map((d) => (
+              <Cell key={d.id} fill={colorFor(d.bucket)} />
+            ))}
+            <LabelList
+              dataKey="bar"
+              position="top"
+              formatter={(v: unknown) => {
+                const n = Number(v);
+                return n < 80_000 ? "" : fmtShort(n);
+              }}
+              style={{ fontSize: 9, fill: "var(--ink)" }}
+            />
+          </Bar>
+          <Line
+            type="stepAfter"
+            dataKey="running"
+            stroke="var(--gold)"
+            strokeWidth={1.5}
+            dot={{ r: 2, fill: "var(--gold)", stroke: "var(--gold)" }}
+            isAnimationActive={false}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ── DemoPage ──────────────────────────────────────────────────────────────
+
+function DemoPage() {
+  const [activeClient, setActiveClient] = useState(0);
+  const lines     = CLIENTS_DATA[activeClient];
+  const chartRows = buildChartRows(lines);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -144,50 +276,66 @@ function DemoPage() {
                 ))}
               </aside>
 
-              {/* Waterfall */}
+              {/* Waterfall chart */}
               <div className="lg:col-span-3 rounded-md border border-border bg-background overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/40">
                   <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-destructive/70" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-accent/70" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-primary/60" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-[color:var(--cascata-outflow)]/70" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-[color:var(--cascata-gold)]/70" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-[color:var(--cascata-navy)]/60" />
                   </div>
-                  <span className="text-xs text-muted-foreground font-mono">29 marcos do P&L</span>
+                  <span className="text-xs text-muted-foreground font-mono">price waterfall</span>
                 </div>
                 <div className="p-4">
-                  {WATERFALL.map((line, i) => (
-                    <div
-                      key={i}
-                      className={`flex items-center gap-3 py-2 border-b border-border/40 last:border-0 ${
-                        line.type === "total" ? "bg-muted/30 -mx-4 px-4" : ""
-                      }`}
-                    >
-                      <span className={`w-10 text-[10px] font-mono shrink-0 ${
-                        line.type === "total" ? "font-bold text-foreground" : "text-muted-foreground"
-                      }`}>
-                        {line.n}
-                      </span>
-                      <span className={`flex-1 text-xs ${
-                        line.type === "total" ? "font-semibold" : line.type === "drill" ? "italic text-primary/70" : "text-muted-foreground"
-                      }`}>
-                        {line.label}
-                      </span>
-                      {line.value !== null && (
-                        <span className={`font-mono text-xs tabular-nums ${
-                          line.type === "total" ? "font-bold" : ""
-                        } ${line.value < 0 ? "text-destructive/70" : ""}`}>
-                          {fmtBRL(line.value)}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                  <WaterfallChart data={chartRows} />
                 </div>
+              </div>
+            </div>
+
+            {/* P&L table */}
+            <div className="mt-6 rounded-md border border-border bg-background overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/40">
+                <span className="text-xs text-muted-foreground font-mono">
+                  {lines.filter((l) => l.value !== null).length} marcos do P&L
+                </span>
+              </div>
+              <div className="p-4">
+                {lines.map((line, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-center gap-3 py-2 border-b border-border/40 last:border-0 ${
+                      line.type === "total" ? "bg-muted/30 -mx-4 px-4" : ""
+                    }`}
+                  >
+                    <span className={`w-10 text-[10px] font-mono shrink-0 ${
+                      line.type === "total" ? "font-bold text-foreground" : "text-muted-foreground"
+                    }`}>
+                      {line.n}
+                    </span>
+                    <span className={`flex-1 text-xs ${
+                      line.type === "total"
+                        ? "font-semibold"
+                        : line.type === "drill"
+                        ? "italic text-primary/70"
+                        : "text-muted-foreground"
+                    }`}>
+                      {line.label}
+                    </span>
+                    {line.value !== null && (
+                      <span className={`font-mono text-xs tabular-nums ${
+                        line.type === "total" ? "font-bold" : ""
+                      } ${line.value < 0 ? "text-destructive/70" : ""}`}>
+                        {fmtBRL(line.value)}
+                      </span>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </section>
 
-        {/* Gostou do que viu? */}
+        {/* CTA */}
         <section className="border-t border-border py-16">
           <div className="mx-auto max-w-5xl px-6 md:px-10 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
             <div>
@@ -199,26 +347,12 @@ function DemoPage() {
                 Suba seus dados e monte o waterfall<br className="hidden md:block" /> em minutos.
               </h2>
             </div>
-            <div className="flex flex-wrap gap-4 items-start">
-              <div className="flex flex-col gap-1.5">
-                <button
-                  type="button"
-                  onClick={handleGuestEntry}
-                  disabled={loadingGuest}
-                  className="inline-flex items-center gap-2 border border-primary text-primary px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50"
-                >
-                  <Eye className="w-4 h-4" />
-                  {loadingGuest ? "Entrando…" : "Entrar como convidado"}
-                </button>
-                <p className="text-[10px] text-muted-foreground font-mono">Não precisa de cadastro</p>
-              </div>
-              <Link
-                to="/signup"
-                className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-8 py-4 text-sm font-semibold hover:opacity-90 transition-opacity"
-              >
-                Criar conta
-              </Link>
-            </div>
+            <Link
+              to="/signup"
+              className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-8 py-4 text-sm font-semibold hover:opacity-90 transition-opacity"
+            >
+              Criar conta
+            </Link>
           </div>
         </section>
       </main>
