@@ -98,9 +98,7 @@ function LandingPage() {
                   Ver demo
                 </Link>
                 <p className="text-[11px] text-[#5F5B55] leading-[1.7]">
-                  Modo demonstração<br />
-                  5 clientes fictícios<br />
-                  somente leitura
+                  Não precisa de cadastro
                 </p>
               </div>
               <Link
