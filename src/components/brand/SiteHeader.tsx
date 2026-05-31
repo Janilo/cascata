@@ -7,7 +7,7 @@ export function SiteHeader() {
       <div className="mx-auto max-w-6xl px-8 h-full flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link to="/" aria-label="Cascata — início">
-            <CascataWordmark height={28} />
+            <CascataWordmark height={28} className="block" />
           </Link>
           <a
             href="https://pereirasaraiva.com"

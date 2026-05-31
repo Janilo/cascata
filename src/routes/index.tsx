@@ -199,15 +199,15 @@ function LandingPage() {
                 <div className="mt-4 space-y-4">
                   <div>
                     <p className="text-xs font-mono text-muted-foreground">MAPEAMENTO</p>
-                    <p className="mt-1 text-sm leading-snug">A IA lê cada arquivo, identifica os campos por cliente e reconcilia chaves (código, nome ou CNPJ).</p>
+                    <p className="mt-1 text-base leading-snug">A IA lê cada arquivo, identifica os campos por cliente e reconcilia chaves (código, nome ou CNPJ).</p>
                   </div>
                   <div>
                     <p className="text-xs font-mono text-muted-foreground">WATERFALL</p>
-                    <p className="mt-1 text-sm leading-snug">29 marcos do P&L, linha por linha, por cliente — em minutos.</p>
+                    <p className="mt-1 text-base leading-snug">29 marcos do P&L, linha por linha, por cliente — em minutos.</p>
                   </div>
                   <div>
                     <p className="text-xs font-mono text-muted-foreground">DRILL-DOWN</p>
-                    <p className="mt-1 text-sm leading-snug">Linha 7 abre os 33 subtipos de desconto comercial, auditáveis e exportáveis.</p>
+                    <p className="mt-1 text-base leading-snug">Linha 7 abre os 33 subtipos de desconto comercial, auditáveis e exportáveis.</p>
                   </div>
                 </div>
               </div>
@@ -218,7 +218,7 @@ function LandingPage() {
         {/* Método */}
         <section className="border-t border-border py-20 bg-card/40">
           <div className="mx-auto max-w-5xl px-6 md:px-10">
-            <h2 className="eyebrow mb-12 font-normal">MÉTODO</h2>
+            <p className="eyebrow mb-10">Método</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
               {[
                 { n: "01", title: "Defina os clientes e o organograma", body: "BU, departamentos, contas e clientes. Salários e custos da hierarquia entram como gasto, com rateio quando faltar valor." },
