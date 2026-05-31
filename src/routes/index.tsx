@@ -8,10 +8,13 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Cascata · Price Waterfall por cliente" },
-      { name: "description", content: "Decompõe receita até o custo de servir. Cada departamento alimenta o seu, a IA lê os arquivos e o waterfall se monta sozinho." },
+      { name: "description", content: "Da receita bruta ao custo de servir, cliente a cliente. A IA lê os arquivos enviados, identifica os campos e monta o price waterfall com drill-down nos 33 tipos de desconto comercial e separação por BU." },
       { property: "og:title", content: "Cascata · Price Waterfall por cliente" },
-      { property: "og:description", content: "Decompõe receita até o custo de servir. Cada departamento alimenta o seu, a IA lê os arquivos e o waterfall se monta sozinho." },
+      { property: "og:description", content: "Da receita bruta ao custo de servir, cliente a cliente. A IA lê os arquivos enviados, identifica os campos e monta o price waterfall com drill-down nos 33 tipos de desconto comercial e separação por BU." },
       { property: "og:url", content: "https://cascata.pereirasaraiva.com/" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Cascata · Price Waterfall por cliente" },
+      { name: "twitter:description", content: "Da receita bruta ao custo de servir, cliente a cliente. A IA lê os arquivos enviados, identifica os campos e monta o price waterfall com drill-down nos 33 tipos de desconto comercial e separação por BU." },
     ],
     links: [
       { rel: "canonical", href: "https://cascata.pereirasaraiva.com/" },
@@ -63,7 +66,7 @@ function LandingPage() {
         {/* Hero */}
         <section className="py-24">
           <div className="mx-auto max-w-5xl px-6 md:px-10">
-            <p className="eyebrow mb-8">Cascata · Pricing · Waterfall</p>
+            <p className="eyebrow mb-8">Pricing · Waterfall</p>
             <h1
               className="font-display italic font-normal text-[color:var(--cascata-ink)] mb-10"
               style={{
