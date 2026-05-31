@@ -7,11 +7,14 @@ export const Route = createFileRoute("/")({
   component: LandingPage,
   head: () => ({
     meta: [
-      { title: "Cascata — Price Waterfall por cliente" },
-      { name: "description", content: "Decompõe receita até o custo de servir. Cada departamento alimenta o seu, a IA lê os arquivos e o waterfall se monta sozinho." },
-      { property: "og:title", content: "Cascata — Price Waterfall por cliente" },
-      { property: "og:description", content: "Decompõe receita até o custo de servir. Cada departamento alimenta o seu, a IA lê os arquivos e o waterfall se monta sozinho." },
+      { title: "Cascata · Price Waterfall por cliente" },
+      { name: "description", content: "Da receita bruta ao custo de servir, cliente a cliente. A IA lê os arquivos enviados, identifica os campos e monta o price waterfall com drill-down nos 33 tipos de desconto comercial e separação por BU." },
+      { property: "og:title", content: "Cascata · Price Waterfall por cliente" },
+      { property: "og:description", content: "Da receita bruta ao custo de servir, cliente a cliente. A IA lê os arquivos enviados, identifica os campos e monta o price waterfall com drill-down nos 33 tipos de desconto comercial e separação por BU." },
       { property: "og:url", content: "https://cascata.pereirasaraiva.com/" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Cascata · Price Waterfall por cliente" },
+      { name: "twitter:description", content: "Da receita bruta ao custo de servir, cliente a cliente. A IA lê os arquivos enviados, identifica os campos e monta o price waterfall com drill-down nos 33 tipos de desconto comercial e separação por BU." },
     ],
     links: [
       { rel: "canonical", href: "https://cascata.pereirasaraiva.com/" },
@@ -63,7 +66,7 @@ function LandingPage() {
         {/* Hero */}
         <section className="py-24">
           <div className="mx-auto max-w-5xl px-6 md:px-10">
-            <p className="eyebrow mb-8">Cascata · Pricing · Waterfall</p>
+            <p className="eyebrow mb-8">Pricing · Waterfall</p>
             <h1
               className="font-display italic font-normal text-[color:var(--cascata-ink)] mb-10"
               style={{
@@ -79,23 +82,25 @@ function LandingPage() {
             <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mb-12">
               Cada departamento alimenta as linhas que conhece. A IA lê os arquivos enviados, identifica os campos por cliente, e o price waterfall se monta — com drill-down nos 33 tipos de desconto comercial e separação por BU.
             </p>
-            <div className="flex flex-wrap items-start gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Link
                 to="/signup"
                 className="inline-flex items-center justify-center gap-2 h-10 px-8 text-xs font-semibold uppercase tracking-[0.18em] bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
               >
                 Criar conta
               </Link>
-              <div className="inline-flex flex-col gap-1">
+              <div className="inline-flex flex-col gap-1.5">
                 <Link
                   to="/demo"
-                  className="inline-flex items-center gap-2 h-10 px-8 text-xs font-semibold uppercase tracking-[0.18em] border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                  className="inline-flex items-center justify-center gap-2 h-10 px-8 text-xs font-semibold uppercase tracking-[0.18em] border-[1.5px] border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                   Ver demo
                 </Link>
-                <p className="text-[10px] text-muted-foreground font-mono">
-                  Modo demonstração · 5 clientes fictícios · somente leitura
+                <p className="text-[11px] text-[#5F5B55] leading-[1.7]">
+                  Modo demonstração<br />
+                  5 clientes fictícios<br />
+                  somente leitura
                 </p>
               </div>
               <Link
