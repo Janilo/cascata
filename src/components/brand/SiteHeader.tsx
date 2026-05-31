@@ -5,7 +5,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70 h-[var(--header-height)]">
       <div className="mx-auto max-w-6xl px-8 h-full flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-baseline gap-3">
           <Link to="/" aria-label="Cascata — início">
             <CascataWordmark height={28} className="block" />
           </Link>
@@ -13,7 +13,7 @@ export function SiteHeader() {
             href="https://pereirasaraiva.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="eyebrow hidden sm:inline hover:opacity-70 transition-opacity"
+            className="hidden sm:inline text-[13px] font-normal text-[#5F5B55] tracking-normal normal-case hover:opacity-70 transition-opacity"
           >
             por J P Saraiva
           </a>
