@@ -66,7 +66,7 @@ function LandingPage() {
         {/* Hero */}
         <section className="py-24">
           <div className="mx-auto max-w-5xl px-6">
-            <p className="eyebrow mb-8">Pricing · Waterfall</p>
+            <p className="eyebrow mb-8">Price Waterfall</p>
             <h1
               className="font-display italic font-normal mb-10 text-7xl"
               style={{
