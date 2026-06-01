@@ -18,7 +18,8 @@ const Input = z.object({
 export const getWaterfall = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => Input.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await requireApprovedUser(context.userId);
     return await computeWaterfall(data); // includes totalsByCode, subTotalsByCode, lines
   });
 
