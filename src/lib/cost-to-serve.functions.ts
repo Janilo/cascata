@@ -5,6 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireApprovedUser } from "./require-approved";
 
 const Input = z.object({ customer_id: z.string().uuid() });
 const PRIORITY_ORDER = ["P1", "P2", "P3", "MANUAL", "RATEIO"] as const;
