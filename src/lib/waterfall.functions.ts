@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireApprovedUser } from "./require-approved";
 import { computeWaterfall } from "./waterfall-core";
 
 const Input = z.object({
@@ -17,7 +18,8 @@ const Input = z.object({
 export const getWaterfall = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => Input.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await requireApprovedUser(context.userId);
     return await computeWaterfall(data); // includes totalsByCode, subTotalsByCode, lines
   });
 
@@ -61,6 +63,7 @@ export const createSharedLink = createServerFn({ method: "POST" })
   .inputValidator((d) => CreateShareInput.parse(d))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    await requireApprovedUser(userId);
     // 24-char URL-safe random token
     const bytes = new Uint8Array(18);
     crypto.getRandomValues(bytes);
