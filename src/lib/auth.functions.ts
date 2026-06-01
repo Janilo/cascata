@@ -5,11 +5,11 @@ import type { Database } from "@/integrations/supabase/types";
 export const enterAsGuestFn = createServerFn({ method: "POST" }).handler(async () => {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+  const email = process.env.GUEST_EMAIL;
+  const password = process.env.GUEST_PASSWORD;
 
   if (!url || !key) throw new Error("Supabase env vars not configured");
-
-  const email = process.env.GUEST_EMAIL ?? "convidado@cascata.app";
-  const password = process.env.GUEST_PASSWORD ?? "cascata-demo-2026";
+  if (!email || !password) throw new Error("GUEST_EMAIL / GUEST_PASSWORD env vars not configured");
 
   const client = createClient<Database>(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
