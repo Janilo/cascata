@@ -68,16 +68,18 @@ function LandingPage() {
           <div className="mx-auto max-w-5xl px-6">
             <p className="eyebrow mb-8">Price Waterfall</p>
             <h1
-              className="font-display italic font-normal mb-10 text-7xl"
+              className="font-display italic mb-10"
               style={{
-                fontSize: "clamp(46px, 6vw, 76px)",
-                lineHeight: 1.02,
+                fontSize: "clamp(64px, 8vw, 112px)",
+                lineHeight: 1.0,
                 letterSpacing: "-0.025em",
+                fontWeight: 700,
                 fontVariationSettings: '"opsz" 144, "SOFT" 0, "WONK" 0',
-                maxWidth: "20ch",
+                maxWidth: "16ch",
+                color: "var(--cascata-ink)",
               }}
             >
-              Da receita bruta <em className="font-normal text-[color:var(--cascata-navy)]">ao custo de servir</em>, cliente a cliente.
+              Da receita bruta <em style={{ fontStyle: "italic", fontWeight: 700, color: "var(--cascata-steel)" }}>ao custo de servir</em>, cliente a cliente.
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mb-12">
               Cada departamento alimenta as linhas que conhece. A IA lê os arquivos enviados, identifica os campos por cliente, e o price waterfall se monta — com drill-down nos 33 tipos de desconto comercial e separação por BU.
