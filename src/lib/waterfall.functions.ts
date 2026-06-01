@@ -63,6 +63,7 @@ export const createSharedLink = createServerFn({ method: "POST" })
   .inputValidator((d) => CreateShareInput.parse(d))
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    await requireApprovedUser(userId);
     // 24-char URL-safe random token
     const bytes = new Uint8Array(18);
     crypto.getRandomValues(bytes);
