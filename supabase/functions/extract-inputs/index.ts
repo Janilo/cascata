@@ -1,4 +1,4 @@
-// Extract per-customer values from an uploaded file using Lovable AI
+// Extract per-customer values from an uploaded file using an OpenAI-compatible AI gateway
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -22,13 +22,14 @@ serve(async (req) => {
     }
 
     const { fileName, content, lineLabel, lineCode, customers } = await req.json();
-    const key = Deno.env.get("LOVABLE_API_KEY");
-    if (!key) throw new Error("LOVABLE_API_KEY missing");
+    const key = Deno.env.get("AI_API_KEY") ?? Deno.env.get("LOVABLE_API_KEY");
+    if (!key) throw new Error("AI_API_KEY (ou LOVABLE_API_KEY) missing");
+    const aiBaseUrl = Deno.env.get("AI_GATEWAY_URL") ?? "https://ai.gateway.lovable.dev/v1";
 
     const sys = `You read a snippet of a business file and extract numeric values per customer for the price-waterfall line "${lineCode} — ${lineLabel}". Match customer names loosely. Return ONLY via the provided tool.`;
     const user = `File: ${fileName}\n\nKnown customers (use the id):\n${customers.map((c: { id: string; name: string }) => `- ${c.id}: ${c.name}`).join("\n")}\n\nContent:\n${content}`;
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const resp = await fetch(`${aiBaseUrl}/chat/completions`, {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -63,7 +64,7 @@ serve(async (req) => {
       }),
     });
     if (resp.status === 429) return new Response(JSON.stringify({ error: "Rate limit. Tente novamente." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    if (resp.status === 402) return new Response(JSON.stringify({ error: "Sem créditos no workspace Lovable AI." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (resp.status === 402) return new Response(JSON.stringify({ error: "Sem créditos no provider de IA." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     if (!resp.ok) {
       const t = await resp.text();
       return new Response(JSON.stringify({ error: t }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

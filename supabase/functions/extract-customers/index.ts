@@ -21,13 +21,14 @@ serve(async (req) => {
     }
 
     const { fileName, content } = await req.json();
-    const key = Deno.env.get("LOVABLE_API_KEY");
-    if (!key) throw new Error("LOVABLE_API_KEY missing");
+    const key = Deno.env.get("AI_API_KEY") ?? Deno.env.get("LOVABLE_API_KEY");
+    if (!key) throw new Error("AI_API_KEY (ou LOVABLE_API_KEY) missing");
+    const aiBaseUrl = Deno.env.get("AI_GATEWAY_URL") ?? "https://ai.gateway.lovable.dev/v1";
 
     const sys = `Extract a list of customer records from this file. Each record may include: account_id, account_name, customer_name (required), cnpj, bu (B2B or B2C). Return only via the tool.`;
     const user = `File: ${fileName}\n\n${content}`;
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const resp = await fetch(`${aiBaseUrl}/chat/completions`, {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
