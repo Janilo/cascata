@@ -1,8 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
-import { CascataWordmark } from "@/components/brand/CascataWordmark";
+import { supabase } from "@/integrations/supabase/client";import { CascataWordmark } from "@/components/brand/CascataWordmark";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({ redirect: (s.redirect as string) || "/waterfall" }),
@@ -42,10 +40,11 @@ function LoginPage() {
 
   const onGoogle = async () => {
     setErr(null);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (result.error) { setErr(result.error.message); return; }
-    if (result.redirected) return;
-    navigate({ to: redirectTo });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin + redirectTo },
+    });
+    if (error) { setErr(error.message); return; }
   };
 
 
