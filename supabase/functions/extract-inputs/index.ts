@@ -22,9 +22,9 @@ serve(async (req) => {
     }
 
     const { fileName, content, lineLabel, lineCode, customers } = await req.json();
-    const key = Deno.env.get("AI_API_KEY") ?? Deno.env.get("LOVABLE_API_KEY");
-    if (!key) throw new Error("AI_API_KEY (ou LOVABLE_API_KEY) missing");
-    const aiBaseUrl = Deno.env.get("AI_GATEWAY_URL") ?? "https://ai.gateway.lovable.dev/v1";
+    const key = Deno.env.get("AI_API_KEY");
+    if (!key) throw new Error("AI_API_KEY missing");
+    const aiBaseUrl = Deno.env.get("AI_GATEWAY_URL") ?? "https://generativelanguage.googleapis.com/v1beta/openai";
 
     const sys = `You read a snippet of a business file and extract numeric values per customer for the price-waterfall line "${lineCode} — ${lineLabel}". Match customer names loosely. Return ONLY via the provided tool.`;
     const user = `File: ${fileName}\n\nKnown customers (use the id):\n${customers.map((c: { id: string; name: string }) => `- ${c.id}: ${c.name}`).join("\n")}\n\nContent:\n${content}`;
@@ -33,7 +33,7 @@ serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gemini-3-flash-preview",
         messages: [{ role: "system", content: sys }, { role: "user", content: user }],
         tools: [{
           type: "function",
