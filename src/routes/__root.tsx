@@ -100,8 +100,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Cascata · Price waterfall instantâneo" },
       { name: "twitter:description", content: "Price waterfall por cliente. 29 linhas da receita bruta ao custo de servir, com drill-down comercial e IA para leitura de arquivos." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/95753e49-482b-4667-8eb7-e9cac86818d9/id-preview-d6732943--ac8aa5e4-74a7-4a61-a021-146f8d4336f6.lovable.app-1779843515869.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/95753e49-482b-4667-8eb7-e9cac86818d9/id-preview-d6732943--ac8aa5e4-74a7-4a61-a021-146f8d4336f6.lovable.app-1779843515869.png" },
+      { property: "og:image", content: "https://cascata.pereirasaraiva.com/og-social.png" },
+      { name: "twitter:image", content: "https://cascata.pereirasaraiva.com/og-social.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
