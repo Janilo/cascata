@@ -89,17 +89,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Cascata · Price waterfall instantâneo" },
-      { name: "description", content: "Price waterfall por cliente. 29 linhas da receita bruta ao custo de servir, com drill-down comercial e IA para leitura de arquivos." },
+      {
+        name: "description",
+        content:
+          "Price waterfall por cliente. 29 linhas da receita bruta ao custo de servir, com drill-down comercial e IA para leitura de arquivos.",
+      },
       { name: "author", content: "Pereira Saraiva" },
       { property: "og:site_name", content: "Cascata" },
       { property: "og:title", content: "Cascata · Price waterfall instantâneo" },
-      { property: "og:description", content: "Price waterfall por cliente. 29 linhas da receita bruta ao custo de servir, com drill-down comercial e IA para leitura de arquivos." },
+      {
+        property: "og:description",
+        content:
+          "Price waterfall por cliente. 29 linhas da receita bruta ao custo de servir, com drill-down comercial e IA para leitura de arquivos.",
+      },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://cascata.pereirasaraiva.com/" },
       { property: "og:locale", content: "pt_BR" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Cascata · Price waterfall instantâneo" },
-      { name: "twitter:description", content: "Price waterfall por cliente. 29 linhas da receita bruta ao custo de servir, com drill-down comercial e IA para leitura de arquivos." },
+      {
+        name: "twitter:description",
+        content:
+          "Price waterfall por cliente. 29 linhas da receita bruta ao custo de servir, com drill-down comercial e IA para leitura de arquivos.",
+      },
       { property: "og:image", content: "https://cascata.pereirasaraiva.com/og-social.png" },
       { name: "twitter:image", content: "https://cascata.pereirasaraiva.com/og-social.png" },
     ],
@@ -107,8 +119,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "canonical", href: "https://cascata.pereirasaraiva.com/" },
-      { rel: "preload", href: "/fonts/Fraunces.ttf", as: "font", type: "font/ttf", crossOrigin: "anonymous" },
-      { rel: "preload", href: "/fonts/InterTight.ttf", as: "font", type: "font/ttf", crossOrigin: "anonymous" },
+      {
+        rel: "preload",
+        href: "/fonts/Fraunces.ttf",
+        as: "font",
+        type: "font/ttf",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "preload",
+        href: "/fonts/InterTight.ttf",
+        as: "font",
+        type: "font/ttf",
+        crossOrigin: "anonymous",
+      },
     ],
     scripts: [
       {

@@ -1,7 +1,17 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart3, Upload, Network, Users, LogOut, TrendingDown, ShieldCheck, LineChart, History } from "lucide-react";
+import {
+  BarChart3,
+  Upload,
+  Network,
+  Users,
+  LogOut,
+  TrendingDown,
+  ShieldCheck,
+  LineChart,
+  History,
+} from "lucide-react";
 import { CascataWordmark } from "@/components/brand/CascataWordmark";
 import { ADMIN_EMAIL } from "@/lib/config";
 
@@ -20,7 +30,8 @@ export const Route = createFileRoute("/_authenticated")({
       supabase.from("profiles").select("is_approved").eq("id", data.user.id).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", data.user.id),
     ]);
-    const isAdmin = (roles || []).some((r) => r.role === "admin") || data.user.email === ADMIN_EMAIL;
+    const isAdmin =
+      (roles || []).some((r) => r.role === "admin") || data.user.email === ADMIN_EMAIL;
     if (!isAdmin && !profile?.is_approved) {
       throw redirect({ to: "/aguardando-aprovacao" });
     }
@@ -38,11 +49,18 @@ function AuthLayout() {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
-      const { data: p } = await supabase.from("profiles").select("full_name,department").eq("id", u.user.id).maybeSingle();
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("full_name,department")
+        .eq("id", u.user.id)
+        .maybeSingle();
       setName(p?.full_name || u.user.email || "");
       setDept(p?.department || "");
-      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
-      setIsAdmin((roles || []).some(r => r.role === "admin") || u.user.email === ADMIN_EMAIL);
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", u.user.id);
+      setIsAdmin((roles || []).some((r) => r.role === "admin") || u.user.email === ADMIN_EMAIL);
     })();
   }, []);
 
@@ -58,18 +76,31 @@ function AuthLayout() {
     { to: "/custo-de-servir", label: "Custo de servir", icon: TrendingDown },
     { to: "/organograma", label: "Organograma", icon: Network },
     { to: "/clientes", label: "Clientes", icon: Users },
-    ...(isAdmin ? [
-      { to: "/auditoria", label: "Auditoria", icon: History },
-      { to: "/admin", label: "Admin", icon: ShieldCheck },
-    ] : []),
+    ...(isAdmin
+      ? [
+          { to: "/auditoria", label: "Auditoria", icon: History },
+          { to: "/admin", label: "Admin", icon: ShieldCheck },
+        ]
+      : []),
   ];
 
   return (
     <div className="min-h-screen flex">
       <aside className="w-64 border-r border-border bg-card flex flex-col">
-        <Link to="/" className="p-6 border-b border-border flex flex-col gap-1" aria-label="Cascata — início">
+        <Link
+          to="/"
+          className="p-6 border-b border-border flex flex-col gap-1"
+          aria-label="Cascata — início"
+        >
           <CascataWordmark height={28} />
-          <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="eyebrow mt-1">por J P Saraiva</a>
+          <a
+            href="https://pereirasaraiva.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="eyebrow mt-1"
+          >
+            por J P Saraiva
+          </a>
         </Link>
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((it) => (
@@ -87,8 +118,13 @@ function AuthLayout() {
         </nav>
         <div className="p-4 border-t border-border">
           <p className="text-sm font-medium text-foreground truncate">{name}</p>
-          <p className="text-xs text-muted-foreground uppercase tracking-[0.1em] mb-3">{dept || "—"}</p>
-          <button onClick={logout} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground uppercase tracking-[0.12em]">
+          <p className="text-xs text-muted-foreground uppercase tracking-[0.1em] mb-3">
+            {dept || "—"}
+          </p>
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground uppercase tracking-[0.12em]"
+          >
             <LogOut className="w-3 h-3" /> Sair
           </button>
         </div>

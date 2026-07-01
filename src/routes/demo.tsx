@@ -1,8 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  ComposedChart, Bar, Cell, Line, CartesianGrid,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, LabelList,
+  ComposedChart,
+  Bar,
+  Cell,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  LabelList,
 } from "recharts";
 import { BrandFooter } from "@/components/brand/BrandFooter";
 import { SiteHeader } from "@/components/brand/SiteHeader";
@@ -12,10 +20,17 @@ export const Route = createFileRoute("/demo")({
   head: () => ({
     meta: [
       { title: "Demo — Cascata · Price Waterfall" },
-      { name: "description", content: "Veja o Cascata em ação: waterfall de receita bruta ao custo de servir, por cliente, com drill-down nos descontos comerciais." },
+      {
+        name: "description",
+        content:
+          "Veja o Cascata em ação: waterfall de receita bruta ao custo de servir, por cliente, com drill-down nos descontos comerciais.",
+      },
       { name: "robots", content: "noindex" },
       { property: "og:title", content: "Demo — Cascata · Price Waterfall" },
-      { property: "og:description", content: "Waterfall do bruto ao custo de servir. Cinco clientes B2B, dados fictícios." },
+      {
+        property: "og:description",
+        content: "Waterfall do bruto ao custo de servir. Cinco clientes B2B, dados fictícios.",
+      },
       { property: "og:image", content: "/og-social.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:image", content: "/og-social.png" },
@@ -55,50 +70,80 @@ const CLIENTS = [
 
 function makeLines(
   rb: number,
-  dv: number, df: number, bn: number,
-  fr: number, im: number, cmv: number,
-  cs: number, ca: number,
+  dv: number,
+  df: number,
+  bn: number,
+  fr: number,
+  im: number,
+  cmv: number,
+  cs: number,
+  ca: number,
 ): WLine[] {
-  const rl1    = rb + dv + df + bn;
-  const mb     = rl1 + fr + im + cmv;
+  const rl1 = rb + dv + df + bn;
+  const mb = rl1 + fr + im + cmv;
   const pocket = mb + cs + ca;
   return [
-    { n: "P0",  label: "Receita bruta",                       value: rb,     type: "root",  bucket: "revenue"   },
-    { n: "P1",  label: "Desconto de volume",                   value: dv,     type: "sub",   bucket: "deduction" },
-    { n: "P2",  label: "Desconto financeiro",                  value: df,     type: "sub",   bucket: "deduction" },
-    { n: "P3",  label: "Bonificação",                         value: bn,     type: "sub",   bucket: "deduction" },
-    { n: "R1",  label: "Receita líquida 1",                    value: rl1,    type: "total", bucket: "total"     },
-    { n: "P4",  label: "Frete e logística",                    value: fr,     type: "sub",   bucket: "cost"      },
-    { n: "P5",  label: "Impostos sobre vendas",                value: im,     type: "sub",   bucket: "cost"      },
-    { n: "P6",  label: "Custo da mercadoria vendida",          value: cmv,    type: "sub",   bucket: "cost"      },
-    { n: "P7",  label: "Margem bruta",                         value: mb,     type: "total", bucket: "total"     },
-    { n: "↳",   label: "33 sublinhas de desconto comercial…", value: null,   type: "drill", bucket: "deduction" },
-    { n: "P8",  label: "Comissão de vendas",                   value: cs,     type: "sub",   bucket: "cost"      },
-    { n: "P9",  label: "Custo de atendimento",                 value: ca,     type: "sub",   bucket: "cost"      },
-    { n: "P10", label: "Custo de servir",                      value: pocket, type: "total", bucket: "total"     },
+    { n: "P0", label: "Receita bruta", value: rb, type: "root", bucket: "revenue" },
+    { n: "P1", label: "Desconto de volume", value: dv, type: "sub", bucket: "deduction" },
+    { n: "P2", label: "Desconto financeiro", value: df, type: "sub", bucket: "deduction" },
+    { n: "P3", label: "Bonificação", value: bn, type: "sub", bucket: "deduction" },
+    { n: "R1", label: "Receita líquida 1", value: rl1, type: "total", bucket: "total" },
+    { n: "P4", label: "Frete e logística", value: fr, type: "sub", bucket: "cost" },
+    { n: "P5", label: "Impostos sobre vendas", value: im, type: "sub", bucket: "cost" },
+    { n: "P6", label: "Custo da mercadoria vendida", value: cmv, type: "sub", bucket: "cost" },
+    { n: "P7", label: "Margem bruta", value: mb, type: "total", bucket: "total" },
+    {
+      n: "↳",
+      label: "33 sublinhas de desconto comercial…",
+      value: null,
+      type: "drill",
+      bucket: "deduction",
+    },
+    { n: "P8", label: "Comissão de vendas", value: cs, type: "sub", bucket: "cost" },
+    { n: "P9", label: "Custo de atendimento", value: ca, type: "sub", bucket: "cost" },
+    { n: "P10", label: "Custo de servir", value: pocket, type: "total", bucket: "total" },
   ];
 }
 
 const CLIENTS_DATA: WLine[][] = [
   // Acme Distribuidora — base
-  makeLines(1_850_000, -185_000,  -55_500,  -37_000,  -92_500, -277_500,   -740_000,  -46_250,  -27_750),
+  makeLines(1_850_000, -185_000, -55_500, -37_000, -92_500, -277_500, -740_000, -46_250, -27_750),
   // Bolt Industries — menor escala, descontos maiores
-  makeLines(1_100_000, -143_000,  -33_000,  -22_000,  -72_000, -171_000,   -506_000,  -18_000,  -12_000),
+  makeLines(1_100_000, -143_000, -33_000, -22_000, -72_000, -171_000, -506_000, -18_000, -12_000),
   // Corvin Textil — porte médio-grande, margens apertadas
-  makeLines(2_400_000, -264_000,  -72_000,  -48_000, -161_280, -342_720, -1_008_000,  -60_480,  -40_320),
+  makeLines(
+    2_400_000,
+    -264_000,
+    -72_000,
+    -48_000,
+    -161_280,
+    -342_720,
+    -1_008_000,
+    -60_480,
+    -40_320,
+  ),
   // Delta Pharma — maior porte, menores deduções
-  makeLines(3_200_000, -256_000,  -64_000,  -32_000, -199_360, -512_640, -1_140_000,  -99_600,  -59_760),
+  makeLines(
+    3_200_000,
+    -256_000,
+    -64_000,
+    -32_000,
+    -199_360,
+    -512_640,
+    -1_140_000,
+    -99_600,
+    -59_760,
+  ),
   // Estela Agro — menor porte
-  makeLines(  820_000,  -90_200,  -16_400,  -24_600,  -55_104, -116_896,   -344_400,  -20_688,  -13_792),
+  makeLines(820_000, -90_200, -16_400, -24_600, -55_104, -116_896, -344_400, -20_688, -13_792),
 ];
 
 // ── utilities ────────────────────────────────────────────────────────────
 
 function fmtBRL(v: number) {
   const abs = Math.abs(v);
-  const s = abs >= 1_000_000
-    ? `R$ ${(abs / 1_000_000).toFixed(2)}M`
-    : `R$ ${(abs / 1_000).toFixed(0)}k`;
+  const s =
+    abs >= 1_000_000 ? `R$ ${(abs / 1_000_000).toFixed(2)}M` : `R$ ${(abs / 1_000).toFixed(0)}k`;
   return v < 0 ? `−${s}` : s;
 }
 
@@ -116,24 +161,46 @@ function buildChartRows(lines: WLine[]): ChartRow[] {
     if (l.type === "drill" || l.value === null) continue;
     if (l.type === "root") {
       running += l.value;
-      rows.push({ id: l.n, name: l.n, label: l.label, bucket: "revenue", base: 0, bar: l.value, running });
+      rows.push({
+        id: l.n,
+        name: l.n,
+        label: l.label,
+        bucket: "revenue",
+        base: 0,
+        bar: l.value,
+        running,
+      });
     } else if (l.type === "sub") {
       const delta = l.value;
-      const base  = delta < 0 ? running + delta : running;
+      const base = delta < 0 ? running + delta : running;
       running += delta;
-      rows.push({ id: l.n, name: l.n, label: l.label, bucket: l.bucket, base, bar: Math.abs(delta), running });
+      rows.push({
+        id: l.n,
+        name: l.n,
+        label: l.label,
+        bucket: l.bucket,
+        base,
+        bar: Math.abs(delta),
+        running,
+      });
     } else {
       // milestone — does not advance running
-      rows.push({ id: l.n, name: l.n, label: l.label, bucket: "total", base: 0, bar: running, running });
+      rows.push({
+        id: l.n,
+        name: l.n,
+        label: l.label,
+        bucket: "total",
+        base: 0,
+        bar: running,
+        running,
+      });
     }
   }
   return rows;
 }
 
 const colorFor = (bucket: ChartRow["bucket"]) =>
-  bucket === "revenue" ? "var(--marine)"  :
-  bucket === "total"   ? "var(--gold)"    :
-                         "var(--outflow)";
+  bucket === "revenue" ? "var(--marine)" : bucket === "total" ? "var(--gold)" : "var(--outflow)";
 
 // ── WaterfallChart ────────────────────────────────────────────────────────
 
@@ -152,15 +219,15 @@ function WaterfallChart({ data }: { data: ChartRow[] }) {
             height={52}
             stroke="var(--soft)"
           />
-          <YAxis
-            tick={{ fontSize: 10 }}
-            tickFormatter={fmtShort}
-            width={76}
-            stroke="var(--soft)"
-          />
+          <YAxis tick={{ fontSize: 10 }} tickFormatter={fmtShort} width={76} stroke="var(--soft)" />
           <Tooltip
             cursor={{ fill: "var(--secondary)", opacity: 0.4 }}
-            contentStyle={{ fontSize: 12, border: "1px solid var(--stone)", borderRadius: 0, background: "var(--card)" }}
+            contentStyle={{
+              fontSize: 12,
+              border: "1px solid var(--stone)",
+              borderRadius: 0,
+              background: "var(--card)",
+            }}
             formatter={(_v: unknown, _n: unknown, props: { payload?: ChartRow }) => {
               const row = props.payload;
               if (!row) return ["—", ""];
@@ -201,7 +268,7 @@ function WaterfallChart({ data }: { data: ChartRow[] }) {
 
 function DemoPage() {
   const [activeClient, setActiveClient] = useState(0);
-  const lines     = CLIENTS_DATA[activeClient];
+  const lines = CLIENTS_DATA[activeClient];
   const chartRows = buildChartRows(lines);
 
   return (
@@ -217,7 +284,9 @@ function DemoPage() {
               <span className="relative inline-flex h-2 w-2 rounded-full bg-[color:var(--cascata-navy)]" />
             </span>
             <span className="font-mono uppercase tracking-wider">Demo-ready</span>
-            <span className="text-muted-foreground hidden sm:inline">· Não precisa de cadastro</span>
+            <span className="text-muted-foreground hidden sm:inline">
+              · Não precisa de cadastro
+            </span>
           </div>
           <Link
             to="/signup"
@@ -233,7 +302,9 @@ function DemoPage() {
         <section className="border-b border-border bg-card">
           <div className="mx-auto max-w-5xl px-6 md:px-10 py-10">
             <div className="flex items-center gap-3 text-xs font-mono text-muted-foreground">
-              <span className="px-2 py-1 bg-[color:var(--cascata-navy)]/10 text-[color:var(--cascata-navy)] uppercase tracking-wider">Demo · dados fictícios</span>
+              <span className="px-2 py-1 bg-[color:var(--cascata-navy)]/10 text-[color:var(--cascata-navy)] uppercase tracking-wider">
+                Demo · dados fictícios
+              </span>
               <span>Price Waterfall gerado pelo Cascata</span>
             </div>
             <h1
@@ -242,7 +313,9 @@ function DemoPage() {
             >
               {CLIENTS[activeClient]}
             </h1>
-            <p className="mt-2 text-sm text-muted-foreground font-mono">B2B Distribuição · Q4 2025</p>
+            <p className="mt-2 text-sm text-muted-foreground font-mono">
+              B2B Distribuição · Q4 2025
+            </p>
           </div>
         </section>
 
@@ -307,24 +380,32 @@ function DemoPage() {
                       line.type === "total" ? "bg-muted/30 -mx-4 px-4" : ""
                     }`}
                   >
-                    <span className={`w-10 text-[10px] font-mono shrink-0 ${
-                      line.type === "total" ? "font-bold text-foreground" : "text-muted-foreground"
-                    }`}>
+                    <span
+                      className={`w-10 text-[10px] font-mono shrink-0 ${
+                        line.type === "total"
+                          ? "font-bold text-foreground"
+                          : "text-muted-foreground"
+                      }`}
+                    >
                       {line.n}
                     </span>
-                    <span className={`flex-1 text-xs ${
-                      line.type === "total"
-                        ? "font-semibold"
-                        : line.type === "drill"
-                        ? "italic text-primary/70"
-                        : "text-muted-foreground"
-                    }`}>
+                    <span
+                      className={`flex-1 text-xs ${
+                        line.type === "total"
+                          ? "font-semibold"
+                          : line.type === "drill"
+                            ? "italic text-primary/70"
+                            : "text-muted-foreground"
+                      }`}
+                    >
                       {line.label}
                     </span>
                     {line.value !== null && (
-                      <span className={`font-mono text-xs tabular-nums ${
-                        line.type === "total" ? "font-bold" : ""
-                      } ${line.value < 0 ? "text-destructive/70" : ""}`}>
+                      <span
+                        className={`font-mono text-xs tabular-nums ${
+                          line.type === "total" ? "font-bold" : ""
+                        } ${line.value < 0 ? "text-destructive/70" : ""}`}
+                      >
                         {fmtBRL(line.value)}
                       </span>
                     )}
@@ -344,7 +425,8 @@ function DemoPage() {
                 className="mt-3 font-display italic font-normal text-primary text-2xl leading-snug"
                 style={{ fontVariationSettings: '"opsz" 96, "SOFT" 0, "WONK" 0' }}
               >
-                Suba seus dados e monte o waterfall<br className="hidden md:block" /> em minutos.
+                Suba seus dados e monte o waterfall
+                <br className="hidden md:block" /> em minutos.
               </h2>
             </div>
             <Link

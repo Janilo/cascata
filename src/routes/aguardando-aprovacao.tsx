@@ -51,8 +51,9 @@ function PendingPage() {
           <p className="eyebrow">ACESSO PENDENTE</p>
           <h1 className="font-display text-3xl text-primary">Aguardando aprovação</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Sua conta <span className="font-mono text-foreground">{email}</span> foi criada, mas ainda
-            não foi aprovada por um administrador. Você receberá acesso assim que a aprovação for concedida.
+            Sua conta <span className="font-mono text-foreground">{email}</span> foi criada, mas
+            ainda não foi aprovada por um administrador. Você receberá acesso assim que a aprovação
+            for concedida.
           </p>
           <p className="text-sm text-muted-foreground">
             Se precisar de acesso urgente, entre em contato com o administrador da plataforma.

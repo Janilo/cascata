@@ -8,17 +8,27 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Cascata · Price Waterfall por cliente" },
-      { name: "description", content: "Da receita bruta ao custo de servir, cliente a cliente. A IA lê os arquivos enviados, identifica os campos e monta o price waterfall com drill-down nos 33 tipos de desconto comercial e separação por BU." },
+      {
+        name: "description",
+        content:
+          "Da receita bruta ao custo de servir, cliente a cliente. A IA lê os arquivos enviados, identifica os campos e monta o price waterfall com drill-down nos 33 tipos de desconto comercial e separação por BU.",
+      },
       { property: "og:title", content: "Cascata · Price Waterfall por cliente" },
-      { property: "og:description", content: "Da receita bruta ao custo de servir, cliente a cliente. A IA lê os arquivos enviados, identifica os campos e monta o price waterfall com drill-down nos 33 tipos de desconto comercial e separação por BU." },
+      {
+        property: "og:description",
+        content:
+          "Da receita bruta ao custo de servir, cliente a cliente. A IA lê os arquivos enviados, identifica os campos e monta o price waterfall com drill-down nos 33 tipos de desconto comercial e separação por BU.",
+      },
       { property: "og:url", content: "https://cascata.pereirasaraiva.com/" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Cascata · Price Waterfall por cliente" },
-      { name: "twitter:description", content: "Da receita bruta ao custo de servir, cliente a cliente. A IA lê os arquivos enviados, identifica os campos e monta o price waterfall com drill-down nos 33 tipos de desconto comercial e separação por BU." },
+      {
+        name: "twitter:description",
+        content:
+          "Da receita bruta ao custo de servir, cliente a cliente. A IA lê os arquivos enviados, identifica os campos e monta o price waterfall com drill-down nos 33 tipos de desconto comercial e separação por BU.",
+      },
     ],
-    links: [
-      { rel: "canonical", href: "https://cascata.pereirasaraiva.com/" },
-    ],
+    links: [{ rel: "canonical", href: "https://cascata.pereirasaraiva.com/" }],
     scripts: [
       {
         type: "application/ld+json",
@@ -46,15 +56,15 @@ export const Route = createFileRoute("/")({
 });
 
 const PREVIEW_LINES = [
-  { n: "P0",   label: "Receita bruta",             value: "R$ 1.850k", type: "root"  },
-  { n: "P1–3", label: "Descontos comerciais",       value: "−R$ 278k",  type: "sub"   },
-  { n: "R1",   label: "Receita líquida 1",           value: "R$ 1.573k", type: "total" },
-  { n: "P5",   label: "Impostos sobre vendas",       value: "−R$ 278k",  type: "sub"   },
-  { n: "P6",   label: "Custo da mercadoria",         value: "−R$ 740k",  type: "sub"   },
-  { n: "P7",   label: "Margem bruta",                value: "R$ 555k",   type: "total" },
-  { n: "↳",    label: "33 sublinhas de desconto…",  value: null,         type: "drill" },
-  { n: "P8–9", label: "Custo de atendimento",        value: "−R$ 74k",   type: "sub"   },
-  { n: "P10",  label: "Custo de servir",             value: "R$ 481k",   type: "total" },
+  { n: "P0", label: "Receita bruta", value: "R$ 1.850k", type: "root" },
+  { n: "P1–3", label: "Descontos comerciais", value: "−R$ 278k", type: "sub" },
+  { n: "R1", label: "Receita líquida 1", value: "R$ 1.573k", type: "total" },
+  { n: "P5", label: "Impostos sobre vendas", value: "−R$ 278k", type: "sub" },
+  { n: "P6", label: "Custo da mercadoria", value: "−R$ 740k", type: "sub" },
+  { n: "P7", label: "Margem bruta", value: "R$ 555k", type: "total" },
+  { n: "↳", label: "33 sublinhas de desconto…", value: null, type: "drill" },
+  { n: "P8–9", label: "Custo de atendimento", value: "−R$ 74k", type: "sub" },
+  { n: "P10", label: "Custo de servir", value: "R$ 481k", type: "total" },
 ];
 
 function LandingPage() {
@@ -79,10 +89,16 @@ function LandingPage() {
                 color: "var(--cascata-ink)",
               }}
             >
-              Da receita bruta <em style={{ fontStyle: "italic", fontWeight: 700, color: "var(--cascata-steel)" }}>ao custo de servir</em>, cliente a cliente.
+              Da receita bruta{" "}
+              <em style={{ fontStyle: "italic", fontWeight: 700, color: "var(--cascata-steel)" }}>
+                ao custo de servir
+              </em>
+              , cliente a cliente.
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mb-12">
-              Cada departamento alimenta as linhas que conhece. A IA lê os arquivos enviados, identifica os campos por cliente, e o price waterfall se monta — com drill-down nos 33 tipos de desconto comercial e separação por BU.
+              Cada departamento alimenta as linhas que conhece. A IA lê os arquivos enviados,
+              identifica os campos por cliente, e o price waterfall se monta — com drill-down nos 33
+              tipos de desconto comercial e separação por BU.
             </p>
             <div className="flex flex-wrap items-start gap-3">
               <Link
@@ -99,9 +115,7 @@ function LandingPage() {
                   <Eye className="w-4 h-4" />
                   Ver demo
                 </Link>
-                <p className="text-[11px] text-[#5F5B55] leading-[1.7]">
-                  Não precisa de cadastro
-                </p>
+                <p className="text-[11px] text-[#5F5B55] leading-[1.7]">Não precisa de cadastro</p>
               </div>
               <Link
                 to="/login"
@@ -123,11 +137,14 @@ function LandingPage() {
                   className="mt-4 font-display italic font-normal text-[color:var(--cascata-ink)] text-4xl md:text-5xl leading-[1.05] max-w-2xl"
                   style={{ fontVariationSettings: '"opsz" 96, "SOFT" 0, "WONK" 0' }}
                 >
-                  Um waterfall <em className="font-normal text-[color:var(--cascata-navy)]">por cliente</em>, do bruto ao custo de servir.
+                  Um waterfall{" "}
+                  <em className="font-normal text-[color:var(--cascata-navy)]">por cliente</em>, do
+                  bruto ao custo de servir.
                 </h2>
               </div>
               <p className="hidden md:block text-sm text-muted-foreground max-w-xs">
-                29 marcos do P&L. A linha 7 abre um segundo waterfall com os 33 tipos de desconto comercial — por cliente, auditável.
+                29 marcos do P&L. A linha 7 abre um segundo waterfall com os 33 tipos de desconto
+                comercial — por cliente, auditável.
               </p>
             </div>
 
@@ -138,7 +155,9 @@ function LandingPage() {
                   <span className="h-2.5 w-2.5 rounded-full bg-accent/70" />
                   <span className="h-2.5 w-2.5 rounded-full bg-primary/60" />
                 </div>
-                <span className="text-xs text-muted-foreground font-mono">Acme Distribuidora · Q4 2025 · 29 marcos do P&L</span>
+                <span className="text-xs text-muted-foreground font-mono">
+                  Acme Distribuidora · Q4 2025 · 29 marcos do P&L
+                </span>
               </div>
               <div className="p-4">
                 {PREVIEW_LINES.map((line, i) => (
@@ -148,24 +167,32 @@ function LandingPage() {
                       line.type === "total" ? "bg-muted/30 -mx-4 px-4" : ""
                     }`}
                   >
-                    <span className={`w-12 text-[10px] font-mono shrink-0 ${
-                      line.type === "total" ? "font-bold text-foreground" : "text-muted-foreground"
-                    }`}>
+                    <span
+                      className={`w-12 text-[10px] font-mono shrink-0 ${
+                        line.type === "total"
+                          ? "font-bold text-foreground"
+                          : "text-muted-foreground"
+                      }`}
+                    >
                       {line.n}
                     </span>
-                    <span className={`flex-1 text-sm ${
-                      line.type === "total"
-                        ? "font-semibold"
-                        : line.type === "drill"
-                        ? "italic text-primary/70"
-                        : "text-muted-foreground"
-                    }`}>
+                    <span
+                      className={`flex-1 text-sm ${
+                        line.type === "total"
+                          ? "font-semibold"
+                          : line.type === "drill"
+                            ? "italic text-primary/70"
+                            : "text-muted-foreground"
+                      }`}
+                    >
                       {line.label}
                     </span>
                     {line.value !== null && (
-                      <span className={`font-mono text-sm tabular-nums ${
-                        line.type === "total" ? "font-bold" : ""
-                      } ${line.value.startsWith("−") ? "text-destructive/70" : ""}`}>
+                      <span
+                        className={`font-mono text-sm tabular-nums ${
+                          line.type === "total" ? "font-bold" : ""
+                        } ${line.value.startsWith("−") ? "text-destructive/70" : ""}`}
+                      >
                         {line.value}
                       </span>
                     )}
@@ -184,7 +211,11 @@ function LandingPage() {
               className="mt-4 font-display italic font-normal text-[color:var(--cascata-ink)] text-4xl md:text-5xl leading-[1.05] max-w-3xl"
               style={{ fontVariationSettings: '"opsz" 96, "SOFT" 0, "WONK" 0' }}
             >
-              De planilhas isoladas ao waterfall <em className="font-normal text-[color:var(--cascata-navy)]">unificado por cliente</em>.
+              De planilhas isoladas ao waterfall{" "}
+              <em className="font-normal text-[color:var(--cascata-navy)]">
+                unificado por cliente
+              </em>
+              .
             </h2>
 
             <div className="mt-10 grid gap-6 md:grid-cols-2">
@@ -204,15 +235,22 @@ function LandingPage() {
                 <div className="mt-4 space-y-4">
                   <div>
                     <p className="text-xs font-mono text-muted-foreground">MAPEAMENTO</p>
-                    <p className="mt-1 text-base leading-snug">A IA lê cada arquivo, identifica os campos por cliente e reconcilia chaves (código, nome ou CNPJ).</p>
+                    <p className="mt-1 text-base leading-snug">
+                      A IA lê cada arquivo, identifica os campos por cliente e reconcilia chaves
+                      (código, nome ou CNPJ).
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs font-mono text-muted-foreground">WATERFALL</p>
-                    <p className="mt-1 text-base leading-snug">29 marcos do P&L, linha por linha, por cliente — em minutos.</p>
+                    <p className="mt-1 text-base leading-snug">
+                      29 marcos do P&L, linha por linha, por cliente — em minutos.
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs font-mono text-muted-foreground">DRILL-DOWN</p>
-                    <p className="mt-1 text-base leading-snug">Linha 7 abre os 33 subtipos de desconto comercial, auditáveis e exportáveis.</p>
+                    <p className="mt-1 text-base leading-snug">
+                      Linha 7 abre os 33 subtipos de desconto comercial, auditáveis e exportáveis.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -226,12 +264,27 @@ function LandingPage() {
             <p className="eyebrow mb-10">Método</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
               {[
-                { n: "01", title: "Defina os clientes e o organograma", body: "BU, departamentos, contas e clientes. Salários e custos da hierarquia entram como gasto, com rateio quando faltar valor." },
-                { n: "02", title: "Cada depto alimenta o seu", body: "Upload de arquivo (PDF, XLSX, CSV) por linha. A IA extrai os campos por cliente, P1 → P2 → P3 como fallback." },
-                { n: "03", title: "Waterfall com drill-down", body: "29 marcos do P&L. A linha 7 abre um segundo waterfall com as 33 sublinhas de desconto comercial — sem misturar." },
+                {
+                  n: "01",
+                  title: "Defina os clientes e o organograma",
+                  body: "BU, departamentos, contas e clientes. Salários e custos da hierarquia entram como gasto, com rateio quando faltar valor.",
+                },
+                {
+                  n: "02",
+                  title: "Cada depto alimenta o seu",
+                  body: "Upload de arquivo (PDF, XLSX, CSV) por linha. A IA extrai os campos por cliente, P1 → P2 → P3 como fallback.",
+                },
+                {
+                  n: "03",
+                  title: "Waterfall com drill-down",
+                  body: "29 marcos do P&L. A linha 7 abre um segundo waterfall com as 33 sublinhas de desconto comercial — sem misturar.",
+                },
               ].map((s) => (
                 <div key={s.n} className="border-t border-foreground/30 pt-6">
-                  <div className="font-display text-4xl text-[var(--gold)] mb-6" style={{ fontVariationSettings: '"opsz" 96' }}>
+                  <div
+                    className="font-display text-4xl text-[var(--gold)] mb-6"
+                    style={{ fontVariationSettings: '"opsz" 96' }}
+                  >
                     {s.n}
                   </div>
                   <h3 className="font-display text-xl text-primary mb-3">{s.title}</h3>

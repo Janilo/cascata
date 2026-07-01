@@ -17,7 +17,10 @@ function CostToServePage() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("customers").select("id,customer_name,account_name,bu").order("customer_name");
+      const { data } = await supabase
+        .from("customers")
+        .select("id,customer_name,account_name,bu")
+        .order("customer_name");
       setCustomers((data as Customer[]) || []);
       if (data && data.length && !selected) setSelected(data[0].id);
     })();
@@ -42,10 +45,15 @@ function CostToServePage() {
 
       <div className="flex items-center gap-3">
         <label className="eyebrow">Cliente</label>
-        <select value={selected} onChange={(e) => setSelected(e.target.value)}
-          className="border border-border bg-transparent px-4 py-2 text-sm min-w-[320px]">
-          {customers.map(c => (
-            <option key={c.id} value={c.id}>{c.customer_name} {c.account_name ? `· ${c.account_name}` : ""} · {c.bu}</option>
+        <select
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+          className="border border-border bg-transparent px-4 py-2 text-sm min-w-[320px]"
+        >
+          {customers.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.customer_name} {c.account_name ? `· ${c.account_name}` : ""} · {c.bu}
+            </option>
           ))}
         </select>
       </div>
@@ -59,13 +67,20 @@ function CostToServePage() {
             <Kpi label="Deduções" value={-data.totals.deductions} />
             <Kpi label="Receita líquida" value={data.totals.netRevenue} accent />
             <Kpi label="Custos alocados" value={-data.totals.costs} />
-            <Kpi label="Margem" value={data.totals.margin} accent={data.totals.margin >= 0} negative={data.totals.margin < 0} />
+            <Kpi
+              label="Margem"
+              value={data.totals.margin}
+              accent={data.totals.margin >= 0}
+              negative={data.totals.margin < 0}
+            />
           </div>
 
           <div className="bg-card border border-border">
             <div className="px-6 py-3 border-b border-border flex items-center justify-between">
               <p className="eyebrow">DETALHE POR LINHA</p>
-              <p className="text-xs text-muted-foreground">Salário alocado: {fmt(data.totals.salaryAllocated)}</p>
+              <p className="text-xs text-muted-foreground">
+                Salário alocado: {fmt(data.totals.salaryAllocated)}
+              </p>
             </div>
             <table className="w-full text-sm">
               <thead className="bg-secondary/40 text-xs uppercase tracking-[0.12em] text-muted-foreground">
@@ -78,13 +93,19 @@ function CostToServePage() {
                 </tr>
               </thead>
               <tbody>
-                {data.lines.map(l => (
+                {data.lines.map((l) => (
                   <tr key={l.code} className="border-t border-border">
                     <td className="px-6 py-2 font-mono text-xs text-muted-foreground">{l.code}</td>
                     <td className="px-6 py-2">{l.label}</td>
-                    <td className="px-6 py-2"><BucketBadge bucket={l.bucket} /></td>
-                    <td className="px-6 py-2 text-muted-foreground text-xs uppercase tracking-wider">{l.department || "—"}</td>
-                    <td className={`px-6 py-2 text-right font-mono text-xs ${l.bucket === "revenue" ? "text-foreground" : "text-muted-foreground"}`}>
+                    <td className="px-6 py-2">
+                      <BucketBadge bucket={l.bucket} />
+                    </td>
+                    <td className="px-6 py-2 text-muted-foreground text-xs uppercase tracking-wider">
+                      {l.department || "—"}
+                    </td>
+                    <td
+                      className={`px-6 py-2 text-right font-mono text-xs ${l.bucket === "revenue" ? "text-foreground" : "text-muted-foreground"}`}
+                    >
                       {fmt(l.bucket === "revenue" ? l.value : -l.value)}
                     </td>
                   </tr>
@@ -98,11 +119,27 @@ function CostToServePage() {
   );
 }
 
-function Kpi({ label, value, accent, negative }: { label: string; value: number; accent?: boolean; negative?: boolean }) {
+function Kpi({
+  label,
+  value,
+  accent,
+  negative,
+}: {
+  label: string;
+  value: number;
+  accent?: boolean;
+  negative?: boolean;
+}) {
   return (
-    <div className={`p-5 border ${accent ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
+    <div
+      className={`p-5 border ${accent ? "border-primary bg-primary/5" : "border-border bg-card"}`}
+    >
       <p className="eyebrow">{label}</p>
-      <p className={`mt-2 font-mono text-2xl ${negative ? "text-destructive" : accent ? "text-primary" : "text-foreground"}`}>{fmt(value)}</p>
+      <p
+        className={`mt-2 font-mono text-2xl ${negative ? "text-destructive" : accent ? "text-primary" : "text-foreground"}`}
+      >
+        {fmt(value)}
+      </p>
     </div>
   );
 }
@@ -114,9 +151,19 @@ function BucketBadge({ bucket }: { bucket: string | null }) {
     cost: "pill-outflow",
   };
   const label: Record<string, string> = { revenue: "Receita", deduction: "Dedução", cost: "Custo" };
-  return <span className={`inline-block px-2 py-0.5 text-[10px] uppercase tracking-wider rounded-full ${m[bucket || ""] || "bg-secondary text-secondary-foreground"}`}>{label[bucket || ""] || bucket}</span>;
+  return (
+    <span
+      className={`inline-block px-2 py-0.5 text-[10px] uppercase tracking-wider rounded-full ${m[bucket || ""] || "bg-secondary text-secondary-foreground"}`}
+    >
+      {label[bucket || ""] || bucket}
+    </span>
+  );
 }
 
 function fmt(n: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(n);
 }
