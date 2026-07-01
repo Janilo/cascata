@@ -48,7 +48,7 @@ serve(async (req) => {
       Deno.env.get("AI_GATEWAY_URL") ?? "https://generativelanguage.googleapis.com/v1beta/openai";
 
     const sys = `Extract a list of customer records from this file. Each record may include: account_id, account_name, customer_name (required), cnpj, bu (B2B or B2C). Return only via the tool.`;
-    const user = `File: ${fileName}\n\n${content}`;
+    const userPrompt = `File: ${fileName}\n\n${content}`;
 
     const resp = await fetch(`${aiBaseUrl}/chat/completions`, {
       method: "POST",
@@ -57,7 +57,7 @@ serve(async (req) => {
         model: "gemini-3-flash-preview",
         messages: [
           { role: "system", content: sys },
-          { role: "user", content: user },
+          { role: "user", content: userPrompt },
         ],
         tools: [
           {

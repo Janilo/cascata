@@ -49,7 +49,7 @@ serve(async (req) => {
       Deno.env.get("AI_GATEWAY_URL") ?? "https://generativelanguage.googleapis.com/v1beta/openai";
 
     const sys = `You read a snippet of a business file and extract numeric values per customer for the price-waterfall line "${lineCode} — ${lineLabel}". Match customer names loosely. Return ONLY via the provided tool.`;
-    const user = `File: ${fileName}\n\nKnown customers (use the id):\n${customers.map((c: { id: string; name: string }) => `- ${c.id}: ${c.name}`).join("\n")}\n\nContent:\n${content}`;
+    const userPrompt = `File: ${fileName}\n\nKnown customers (use the id):\n${customers.map((c: { id: string; name: string }) => `- ${c.id}: ${c.name}`).join("\n")}\n\nContent:\n${content}`;
 
     const resp = await fetch(`${aiBaseUrl}/chat/completions`, {
       method: "POST",
@@ -58,7 +58,7 @@ serve(async (req) => {
         model: "gemini-3-flash-preview",
         messages: [
           { role: "system", content: sys },
-          { role: "user", content: user },
+          { role: "user", content: userPrompt },
         ],
         tools: [
           {
