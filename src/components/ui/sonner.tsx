@@ -13,14 +13,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
           description: "group-[.toast]:text-[color:#AEBDCB]",
           actionButton:
             "group-[.toast]:bg-[color:var(--cascata-navy)] group-[.toast]:text-[color:var(--cascata-white)]",
-          cancelButton:
-            "group-[.toast]:bg-transparent group-[.toast]:text-[color:#AEBDCB]",
-          success:
-            "group-[.toaster]:[&_[data-icon]]:text-[color:var(--cascata-inflow)]",
-          warning:
-            "group-[.toaster]:[&_[data-icon]]:text-[color:var(--cascata-gold)]",
-          error:
-            "group-[.toaster]:[&_[data-icon]]:text-[color:var(--cascata-outflow)]",
+          cancelButton: "group-[.toast]:bg-transparent group-[.toast]:text-[color:#AEBDCB]",
+          success: "group-[.toaster]:[&_[data-icon]]:text-[color:var(--cascata-inflow)]",
+          warning: "group-[.toaster]:[&_[data-icon]]:text-[color:var(--cascata-gold)]",
+          error: "group-[.toaster]:[&_[data-icon]]:text-[color:var(--cascata-outflow)]",
         },
       }}
       {...props}

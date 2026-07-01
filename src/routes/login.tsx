@@ -1,22 +1,30 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { supabase } from "@/integrations/supabase/client";import { CascataWordmark } from "@/components/brand/CascataWordmark";
+import { supabase } from "@/integrations/supabase/client";
+import { CascataWordmark } from "@/components/brand/CascataWordmark";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (s: Record<string, unknown>) => ({ redirect: (s.redirect as string) || "/waterfall" }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    redirect: (s.redirect as string) || "/waterfall",
+  }),
   component: LoginPage,
   head: () => ({
     meta: [
       { title: "Entrar — Cascata" },
-      { name: "description", content: "Acesse sua conta Cascata para abrir o price waterfall por cliente, com drill-down de descontos comerciais e separação por BU." },
+      {
+        name: "description",
+        content:
+          "Acesse sua conta Cascata para abrir o price waterfall por cliente, com drill-down de descontos comerciais e separação por BU.",
+      },
       { property: "og:title", content: "Entrar — Cascata" },
-      { property: "og:description", content: "Acesse sua conta Cascata para abrir o price waterfall por cliente." },
+      {
+        property: "og:description",
+        content: "Acesse sua conta Cascata para abrir o price waterfall por cliente.",
+      },
       { property: "og:url", content: "https://cascata.pereirasaraiva.com/login" },
       { name: "robots", content: "noindex,follow" },
     ],
-    links: [
-      { rel: "canonical", href: "https://cascata.pereirasaraiva.com/login" },
-    ],
+    links: [{ rel: "canonical", href: "https://cascata.pereirasaraiva.com/login" }],
   }),
 });
 
@@ -34,7 +42,10 @@ function LoginPage() {
     setErr(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) { setErr(error.message); return; }
+    if (error) {
+      setErr(error.message);
+      return;
+    }
     navigate({ to: redirectTo });
   };
 
@@ -44,21 +55,38 @@ function LoginPage() {
       provider: "google",
       options: { redirectTo: window.location.origin + redirectTo },
     });
-    if (error) { setErr(error.message); return; }
+    if (error) {
+      setErr(error.message);
+      return;
+    }
   };
-
 
   return (
     <div className="min-h-screen flex">
-      <aside className="hidden md:flex w-1/2 bg-primary text-primary-foreground p-16 flex-col justify-between" aria-hidden="true">
-        <Link to="/" aria-label="Cascata" className="text-primary-foreground"><CascataWordmark height={28} className="!text-current" /></Link>
+      <aside
+        className="hidden md:flex w-1/2 bg-primary text-primary-foreground p-16 flex-col justify-between"
+        aria-hidden="true"
+      >
+        <Link to="/" aria-label="Cascata" className="text-primary-foreground">
+          <CascataWordmark height={28} className="!text-current" />
+        </Link>
         <div>
           <p className="eyebrow !text-[var(--gold)] mb-6">PRICING · WATERFALL</p>
           <p className="font-display text-5xl italic leading-tight">
-            Entre para abrir<br/>o seu P&L<br/>por cliente.
+            Entre para abrir
+            <br />o seu P&L
+            <br />
+            por cliente.
           </p>
         </div>
-        <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="text-xs uppercase tracking-[0.18em] opacity-60">por J P Saraiva</a>
+        <a
+          href="https://pereirasaraiva.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs uppercase tracking-[0.18em] opacity-60"
+        >
+          por J P Saraiva
+        </a>
       </aside>
       <main className="flex-1 flex items-center justify-center p-12">
         <form onSubmit={onSubmit} className="w-full max-w-sm">
@@ -69,18 +97,34 @@ function LoginPage() {
             <Field label="Senha" type="password" value={password} onChange={setPassword} required />
           </div>
           <div className="flex justify-end mt-2">
-            <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-primary">Esqueci a senha</Link>
+            <Link
+              to="/forgot-password"
+              className="text-xs text-muted-foreground hover:text-primary"
+            >
+              Esqueci a senha
+            </Link>
           </div>
           {err && <p className="text-xs text-destructive mt-4">{err}</p>}
-          <button type="submit" disabled={loading} className="mt-8 w-full bg-primary text-primary-foreground py-4 text-sm font-semibold uppercase tracking-[0.18em] disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-8 w-full bg-primary text-primary-foreground py-4 text-sm font-semibold uppercase tracking-[0.18em] disabled:opacity-60"
+          >
             {loading ? "Entrando…" : "Entrar"}
           </button>
-          <button type="button" onClick={onGoogle} className="mt-3 w-full border border-foreground/20 py-4 text-sm font-semibold uppercase tracking-[0.18em] hover:bg-foreground/5">
+          <button
+            type="button"
+            onClick={onGoogle}
+            className="mt-3 w-full border border-foreground/20 py-4 text-sm font-semibold uppercase tracking-[0.18em] hover:bg-foreground/5"
+          >
             Entrar com Google
           </button>
 
           <p className="mt-6 text-sm text-muted-foreground">
-            Sem conta? <Link to="/signup" className="text-primary underline underline-offset-4">Criar conta</Link>
+            Sem conta?{" "}
+            <Link to="/signup" className="text-primary underline underline-offset-4">
+              Criar conta
+            </Link>
           </p>
         </form>
       </main>
@@ -88,12 +132,26 @@ function LoginPage() {
   );
 }
 
-function Field({ label, type, value, onChange, required }: { label: string; type: string; value: string; onChange: (v: string) => void; required?: boolean }) {
+function Field({
+  label,
+  type,
+  value,
+  onChange,
+  required,
+}: {
+  label: string;
+  type: string;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+}) {
   return (
     <label className="block">
       <span className="eyebrow block mb-2">{label}</span>
       <input
-        type={type} value={value} required={required}
+        type={type}
+        value={value}
+        required={required}
         onChange={(e) => onChange(e.target.value)}
         className="w-full bg-transparent border-0 border-b border-foreground/40 focus:border-primary focus:outline-none py-2 text-foreground"
       />

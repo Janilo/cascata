@@ -12,7 +12,10 @@ const Input = z.object({
   leader: z.string().optional(),
   account: z.string().optional(),
   customerId: z.string().optional(),
-  referenceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  referenceDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 export const getWaterfall = createServerFn({ method: "POST" })
@@ -23,7 +26,13 @@ export const getWaterfall = createServerFn({ method: "POST" })
     return await computeWaterfall(data); // includes totalsByCode, subTotalsByCode, lines
   });
 
-const TokenInput = z.object({ token: z.string().min(8).max(128).regex(/^[A-Za-z0-9_-]+$/) });
+const TokenInput = z.object({
+  token: z
+    .string()
+    .min(8)
+    .max(128)
+    .regex(/^[A-Za-z0-9_-]+$/),
+});
 
 export const getSharedWaterfall = createServerFn({ method: "POST" })
   .inputValidator((d) => TokenInput.parse(d))
@@ -53,7 +62,10 @@ export const getSharedWaterfall = createServerFn({ method: "POST" })
 
 const CreateShareInput = z.object({
   bu: z.string().min(1).max(64),
-  referenceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  referenceDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   label: z.string().max(120).optional(),
   expiresInDays: z.number().int().min(1).max(90).default(14),
 });
@@ -67,14 +79,21 @@ export const createSharedLink = createServerFn({ method: "POST" })
     // 24-char URL-safe random token
     const bytes = new Uint8Array(18);
     crypto.getRandomValues(bytes);
-    const token = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const token = btoa(String.fromCharCode(...bytes))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
     const expiresAt = new Date(Date.now() + data.expiresInDays * 24 * 3600 * 1000).toISOString();
 
     const { data: row, error } = await supabaseAdmin
       .from("shared_links")
       .insert({
-        token, bu: data.bu, reference_date: data.referenceDate ?? null,
-        label: data.label ?? null, expires_at: expiresAt, created_by: userId,
+        token,
+        bu: data.bu,
+        reference_date: data.referenceDate ?? null,
+        label: data.label ?? null,
+        expires_at: expiresAt,
+        created_by: userId,
       })
       .select("token,expires_at")
       .single();

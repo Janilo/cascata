@@ -6,7 +6,9 @@ import { CascataWordmark } from "@/components/brand/CascataWordmark";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reset-password")({
-  head: () => ({ meta: [{ title: "Redefinir senha — Cascata" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [{ title: "Redefinir senha — Cascata" }, { name: "robots", content: "noindex" }],
+  }),
   component: ResetPasswordPage,
 });
 
@@ -20,38 +22,63 @@ function ResetPasswordPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
-    supabase.auth.getSession().then(({ data }) => { if (data.session) setReady(true); });
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setReady(true);
+    });
     return () => subscription.unsubscribe();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) { toast.error("Senha precisa ter ao menos 6 caracteres."); return; }
-    if (password !== confirm) { toast.error("As senhas não coincidem."); return; }
+    if (password.length < 6) {
+      toast.error("Senha precisa ter ao menos 6 caracteres.");
+      return;
+    }
+    if (password !== confirm) {
+      toast.error("As senhas não coincidem.");
+      return;
+    }
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Senha atualizada.");
     navigate({ to: "/waterfall" });
   };
 
   return (
     <div className="min-h-screen flex">
-      <aside className="hidden md:flex w-1/2 bg-primary text-primary-foreground p-16 flex-col justify-between" aria-hidden="true">
+      <aside
+        className="hidden md:flex w-1/2 bg-primary text-primary-foreground p-16 flex-col justify-between"
+        aria-hidden="true"
+      >
         <Link to="/" aria-label="Cascata" className="text-primary-foreground">
           <CascataWordmark height={28} className="!text-current" />
         </Link>
         <div>
           <p className="eyebrow !text-[var(--gold)] mb-6">PRICING · WATERFALL</p>
           <p className="font-display text-5xl italic leading-tight">
-            Nova senha.<br />Novo acesso.
+            Nova senha.
+            <br />
+            Novo acesso.
           </p>
         </div>
-        <a href="https://pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="text-xs uppercase tracking-[0.18em] opacity-60">por J P Saraiva</a>
+        <a
+          href="https://pereirasaraiva.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs uppercase tracking-[0.18em] opacity-60"
+        >
+          por J P Saraiva
+        </a>
       </aside>
 
       <main className="flex-1 flex items-center justify-center p-12">
@@ -61,9 +88,15 @@ function ResetPasswordPage() {
 
           {!ready ? (
             <p className="text-sm text-muted-foreground">
-              Validando seu link… Se esta página não avançar em alguns segundos, o link pode ter expirado.
+              Validando seu link… Se esta página não avançar em alguns segundos, o link pode ter
+              expirado.
               <br />
-              <Link to="/forgot-password" className="mt-3 inline-block text-primary underline underline-offset-4">Pedir novo link</Link>
+              <Link
+                to="/forgot-password"
+                className="mt-3 inline-block text-primary underline underline-offset-4"
+              >
+                Pedir novo link
+              </Link>
             </p>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">

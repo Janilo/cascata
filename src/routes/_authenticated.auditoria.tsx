@@ -9,7 +9,10 @@ export const Route = createFileRoute("/_authenticated/auditoria")({
     if (typeof window === "undefined") return;
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", u.user.id);
     const isAdmin = (roles || []).some((r) => r.role === "admin");
     if (!isAdmin) throw redirect({ to: "/waterfall" });
   },
@@ -33,7 +36,11 @@ type AuditRow = {
 const fmt = (n: number | null) =>
   n === null || n === undefined
     ? "—"
-    : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(n);
+    : new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        maximumFractionDigits: 0,
+      }).format(n);
 
 function AuditoriaPage() {
   const { bus } = useBusinessUnits();
@@ -51,7 +58,11 @@ function AuditoriaPage() {
     (async () => {
       setLoading(true);
       const [{ data: audit }, { data: profiles }, { data: custs }] = await Promise.all([
-        supabase.from("line_inputs_audit").select("*").order("changed_at", { ascending: false }).limit(limit),
+        supabase
+          .from("line_inputs_audit")
+          .select("*")
+          .order("changed_at", { ascending: false })
+          .limit(limit),
         supabase.from("profiles").select("id,full_name"),
         supabase.from("customers").select("id,customer_name"),
       ]);
@@ -76,8 +87,14 @@ function AuditoriaPage() {
     });
   }, [rows, fAction, fBu, fDept, fLine]);
 
-  const depts = useMemo(() => Array.from(new Set(rows.map((r) => r.department).filter(Boolean))) as string[], [rows]);
-  const codes = useMemo(() => Array.from(new Set(rows.map((r) => r.line_code).filter(Boolean))) as string[], [rows]);
+  const depts = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.department).filter(Boolean))) as string[],
+    [rows],
+  );
+  const codes = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.line_code).filter(Boolean))) as string[],
+    [rows],
+  );
 
   const delta = (r: AuditRow) => {
     if (r.action === "INSERT") return r.new_value ?? 0;
@@ -88,10 +105,13 @@ function AuditoriaPage() {
   return (
     <div className="p-10 space-y-8">
       <div>
-        <p className="eyebrow flex items-center gap-2"><History className="w-3 h-3" /> AUDITORIA</p>
+        <p className="eyebrow flex items-center gap-2">
+          <History className="w-3 h-3" /> AUDITORIA
+        </p>
         <h1 className="font-display text-4xl text-primary mt-2">Histórico de alterações</h1>
         <p className="text-sm text-muted-foreground mt-2">
-          Todas as inserções, edições e exclusões em <code>line_inputs</code>, com diff de valor e autor.
+          Todas as inserções, edições e exclusões em <code>line_inputs</code>, com diff de valor e
+          autor.
         </p>
       </div>
 
@@ -99,7 +119,11 @@ function AuditoriaPage() {
         <Filter className="w-4 h-4 text-muted-foreground" />
         <div className="flex flex-col gap-1">
           <span className="eyebrow text-[10px]">Ação</span>
-          <select value={fAction} onChange={(e) => setFAction(e.target.value)} className="bg-background border border-border px-3 py-2 text-sm">
+          <select
+            value={fAction}
+            onChange={(e) => setFAction(e.target.value)}
+            className="bg-background border border-border px-3 py-2 text-sm"
+          >
             <option value="">Todas</option>
             <option value="INSERT">INSERT</option>
             <option value="UPDATE">UPDATE</option>
@@ -108,29 +132,61 @@ function AuditoriaPage() {
         </div>
         <div className="flex flex-col gap-1">
           <span className="eyebrow text-[10px]">BU</span>
-          <select value={fBu} onChange={(e) => setFBu(e.target.value)} className="bg-background border border-border px-3 py-2 text-sm">
+          <select
+            value={fBu}
+            onChange={(e) => setFBu(e.target.value)}
+            className="bg-background border border-border px-3 py-2 text-sm"
+          >
             <option value="">Todas</option>
-            {bus.map(b => <option key={b.code} value={b.code}>{b.label}</option>)}
+            {bus.map((b) => (
+              <option key={b.code} value={b.code}>
+                {b.label}
+              </option>
+            ))}
           </select>
         </div>
         <div className="flex flex-col gap-1">
           <span className="eyebrow text-[10px]">Depto</span>
-          <select value={fDept} onChange={(e) => setFDept(e.target.value)} className="bg-background border border-border px-3 py-2 text-sm">
+          <select
+            value={fDept}
+            onChange={(e) => setFDept(e.target.value)}
+            className="bg-background border border-border px-3 py-2 text-sm"
+          >
             <option value="">Todos</option>
-            {depts.map((d) => <option key={d} value={d}>{d}</option>)}
+            {depts.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
           </select>
         </div>
         <div className="flex flex-col gap-1">
           <span className="eyebrow text-[10px]">Linha</span>
-          <select value={fLine} onChange={(e) => setFLine(e.target.value)} className="bg-background border border-border px-3 py-2 text-sm">
+          <select
+            value={fLine}
+            onChange={(e) => setFLine(e.target.value)}
+            className="bg-background border border-border px-3 py-2 text-sm"
+          >
             <option value="">Todas</option>
-            {codes.sort().map((c) => <option key={c} value={c}>{c}</option>)}
+            {codes.sort().map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
           </select>
         </div>
         <div className="flex flex-col gap-1">
           <span className="eyebrow text-[10px]">Limite</span>
-          <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className="bg-background border border-border px-3 py-2 text-sm">
-            {[100, 200, 500, 1000].map((n) => <option key={n} value={n}>{n}</option>)}
+          <select
+            value={limit}
+            onChange={(e) => setLimit(Number(e.target.value))}
+            className="bg-background border border-border px-3 py-2 text-sm"
+          >
+            {[100, 200, 500, 1000].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
           </select>
         </div>
         <div className="ml-auto text-xs text-muted-foreground uppercase tracking-[0.12em]">
@@ -156,33 +212,59 @@ function AuditoriaPage() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">Carregando…</td></tr>
+              <tr>
+                <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                  Carregando…
+                </td>
+              </tr>
             )}
             {!loading && filtered.length === 0 && (
-              <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">Nenhum registro.</td></tr>
+              <tr>
+                <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                  Nenhum registro.
+                </td>
+              </tr>
             )}
             {filtered.map((r) => {
               const d = delta(r);
-              const badge = r.action === "INSERT" ? "bg-[var(--gold)] text-ink"
-                : r.action === "DELETE" ? "bg-destructive text-destructive-foreground"
-                : "bg-primary text-primary-foreground";
+              const badge =
+                r.action === "INSERT"
+                  ? "bg-[var(--gold)] text-ink"
+                  : r.action === "DELETE"
+                    ? "bg-destructive text-destructive-foreground"
+                    : "bg-primary text-primary-foreground";
               return (
                 <tr key={r.id} className="border-t border-border hover:bg-secondary/40">
                   <td className="px-4 py-2 whitespace-nowrap text-xs text-muted-foreground">
                     {new Date(r.changed_at).toLocaleString("pt-BR")}
                   </td>
-                  <td className="px-4 py-2 text-xs">{r.changed_by ? (users.get(r.changed_by) || r.changed_by.slice(0, 8)) : "—"}</td>
+                  <td className="px-4 py-2 text-xs">
+                    {r.changed_by ? users.get(r.changed_by) || r.changed_by.slice(0, 8) : "—"}
+                  </td>
                   <td className="px-4 py-2">
-                    <span className={`px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] font-semibold ${badge}`}>{r.action}</span>
+                    <span
+                      className={`px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] font-semibold ${badge}`}
+                    >
+                      {r.action}
+                    </span>
                   </td>
                   <td className="px-4 py-2 text-xs">{r.bu || "—"}</td>
                   <td className="px-4 py-2 text-xs">{r.department || "—"}</td>
                   <td className="px-4 py-2 text-xs font-mono">{r.line_code || "—"}</td>
-                  <td className="px-4 py-2 text-xs">{r.customer_id ? (customers.get(r.customer_id) || r.customer_id.slice(0, 8)) : "—"}</td>
-                  <td className="px-4 py-2 text-xs text-right tabular-nums text-muted-foreground">{fmt(r.old_value)}</td>
+                  <td className="px-4 py-2 text-xs">
+                    {r.customer_id
+                      ? customers.get(r.customer_id) || r.customer_id.slice(0, 8)
+                      : "—"}
+                  </td>
+                  <td className="px-4 py-2 text-xs text-right tabular-nums text-muted-foreground">
+                    {fmt(r.old_value)}
+                  </td>
                   <td className="px-4 py-2 text-xs text-right tabular-nums">{fmt(r.new_value)}</td>
-                  <td className={`px-4 py-2 text-xs text-right tabular-nums font-semibold ${d > 0 ? "text-[var(--gold)]" : d < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                    {d > 0 ? "▲ " : d < 0 ? "▼ " : ""}{fmt(Math.abs(d))}
+                  <td
+                    className={`px-4 py-2 text-xs text-right tabular-nums font-semibold ${d > 0 ? "text-[var(--gold)]" : d < 0 ? "text-destructive" : "text-muted-foreground"}`}
+                  >
+                    {d > 0 ? "▲ " : d < 0 ? "▼ " : ""}
+                    {fmt(Math.abs(d))}
                   </td>
                 </tr>
               );

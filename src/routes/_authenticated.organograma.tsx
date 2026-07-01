@@ -10,9 +10,14 @@ export const Route = createFileRoute("/_authenticated/organograma")({
 });
 
 type Node = {
-  id: string; parent_id: string | null;
-  bu: string | null; department: string | null; leader: string | null;
-  channel: string | null; account: string | null; customer: string | null;
+  id: string;
+  parent_id: string | null;
+  bu: string | null;
+  department: string | null;
+  leader: string | null;
+  channel: string | null;
+  account: string | null;
+  customer: string | null;
 };
 
 const LEVELS = ["bu", "department", "leader", "channel", "account", "customer"] as const;
@@ -69,8 +74,11 @@ function OrgPage() {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (u.user) {
-        const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
-        setIsAdmin((roles || []).some(r => r.role === "admin"));
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", u.user.id);
+        setIsAdmin((roles || []).some((r) => r.role === "admin"));
       }
       reload();
     })();
@@ -78,8 +86,15 @@ function OrgPage() {
 
   const add = async () => {
     const { salary, ...rest } = form;
-    const { data: inserted, error } = await supabase.from("org_nodes").insert(rest).select("id").single();
-    if (error) { alert(error.message); return; }
+    const { data: inserted, error } = await supabase
+      .from("org_nodes")
+      .insert(rest)
+      .select("id")
+      .single();
+    if (error) {
+      alert(error.message);
+      return;
+    }
     if (isAdmin && inserted && salary) {
       await supabase.from("org_node_salaries").insert({ org_node_id: inserted.id, salary });
     }
@@ -96,12 +111,26 @@ function OrgPage() {
     setBusy(true);
     try {
       const text = await fileToText(file);
-      const rows = text.split(/\r?\n/).filter((r) => r.trim()).map((r) => r.split(","));
-      if (rows.length < 2) { alert("Não consegui ler o arquivo. Esperado: BU,Departamento,Líder,Canal,Conta,Cliente,Salário"); setBusy(false); return; }
+      const rows = text
+        .split(/\r?\n/)
+        .filter((r) => r.trim())
+        .map((r) => r.split(","));
+      if (rows.length < 2) {
+        alert(
+          "Não consegui ler o arquivo. Esperado: BU,Departamento,Líder,Canal,Conta,Cliente,Salário",
+        );
+        setBusy(false);
+        return;
+      }
       const header = rows[0].map((h) => h.trim().toLowerCase());
       const idx = (k: string) => header.findIndex((h) => h.includes(k));
-      const iBu = idx("bu"), iDept = idx("depart"), iLead = idx("líder") >= 0 ? idx("líder") : idx("lider"),
-        iCh = idx("canal"), iAcc = idx("conta"), iCust = idx("cliente"), iSal = idx("salár") >= 0 ? idx("salár") : idx("salar");
+      const iBu = idx("bu"),
+        iDept = idx("depart"),
+        iLead = idx("líder") >= 0 ? idx("líder") : idx("lider"),
+        iCh = idx("canal"),
+        iAcc = idx("conta"),
+        iCust = idx("cliente"),
+        iSal = idx("salár") >= 0 ? idx("salár") : idx("salar");
       type RowInsert = Partial<Node> & { __salary?: number };
       const inserts: RowInsert[] = [];
       for (let r = 1; r < rows.length; r++) {
@@ -117,14 +146,23 @@ function OrgPage() {
           __salary: iSal >= 0 ? Number((row[iSal] || "0").replace(/[^\d.-]/g, "")) || 0 : 0,
         });
       }
-      if (inserts.length === 0) { alert("Nenhuma linha encontrada."); setBusy(false); return; }
+      if (inserts.length === 0) {
+        alert("Nenhuma linha encontrada.");
+        setBusy(false);
+        return;
+      }
       const nodeRows = inserts.map(({ __salary, ...rest }) => rest);
-      const { data: insertedRows, error } = await supabase.from("org_nodes").insert(nodeRows).select("id");
-      if (error) { alert(error.message); }
+      const { data: insertedRows, error } = await supabase
+        .from("org_nodes")
+        .insert(nodeRows)
+        .select("id");
+      if (error) {
+        alert(error.message);
+      }
       if (isAdmin && insertedRows) {
         const salaryRows = insertedRows
           .map((r, i) => ({ org_node_id: r.id, salary: inserts[i].__salary || 0 }))
-          .filter(r => r.salary > 0);
+          .filter((r) => r.salary > 0);
         if (salaryRows.length) await supabase.from("org_node_salaries").insert(salaryRows);
       }
       await reload();
@@ -139,18 +177,28 @@ function OrgPage() {
     <div className="p-10 space-y-8">
       <div>
         <p className="eyebrow">ORGANOGRAMA</p>
-        <h1 className="font-display text-4xl text-primary mt-2">BU · Departamento · Líder · Canal · Conta · Cliente</h1>
+        <h1 className="font-display text-4xl text-primary mt-2">
+          BU · Departamento · Líder · Canal · Conta · Cliente
+        </h1>
         <p className="text-sm text-muted-foreground mt-2">
-          Quando faltar valor em algum nível, o rateio do último nível completo é aplicado. Salários entram como gasto no waterfall.
-          {!isAdmin && <span className="block mt-1 text-xs italic">Você não tem permissão para ver ou editar salários.</span>}
+          Quando faltar valor em algum nível, o rateio do último nível completo é aplicado. Salários
+          entram como gasto no waterfall.
+          {!isAdmin && (
+            <span className="block mt-1 text-xs italic">
+              Você não tem permissão para ver ou editar salários.
+            </span>
+          )}
         </p>
       </div>
 
       <div className="flex items-center gap-3">
         <div className="inline-flex border border-border">
           {(["tree", "table"] as const).map((v) => (
-            <button key={v} onClick={() => setView(v)}
-              className={`px-5 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${view === v ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-secondary"}`}>
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`px-5 py-2 text-xs uppercase tracking-[0.18em] font-semibold ${view === v ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-secondary"}`}
+            >
               {v === "tree" ? "Árvore" : "Tabela"}
             </button>
           ))}
@@ -158,26 +206,55 @@ function OrgPage() {
         <label className="inline-flex items-center gap-2 bg-secondary px-4 py-2 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-primary hover:text-primary-foreground cursor-pointer">
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
           Importar planilha
-          <input type="file" hidden accept=".csv,.txt,.xlsx,.xls" onChange={(e) => { const f = e.target.files?.[0]; if (f) importFile(f); }} />
+          <input
+            type="file"
+            hidden
+            accept=".csv,.txt,.xlsx,.xls"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) importFile(f);
+            }}
+          />
         </label>
       </div>
 
       <div className="bg-card border border-border p-6">
         <p className="eyebrow mb-4">NOVO NÓ</p>
         <div className="grid grid-cols-7 gap-3">
-          <select value={form.bu || defaultBu} onChange={(e) => setForm({ ...form, bu: e.target.value })} className="border border-border bg-transparent px-3 py-2 text-sm">
-            {bus.map(b => <option key={b.code} value={b.code}>{b.label}</option>)}
+          <select
+            value={form.bu || defaultBu}
+            onChange={(e) => setForm({ ...form, bu: e.target.value })}
+            className="border border-border bg-transparent px-3 py-2 text-sm"
+          >
+            {bus.map((b) => (
+              <option key={b.code} value={b.code}>
+                {b.label}
+              </option>
+            ))}
           </select>
-          {(["department","leader","channel","account","customer"] as const).map(k => (
-            <input key={k} placeholder={k} value={(form as Record<string, unknown>)[k] as string || ""} onChange={(e) => setForm({ ...form, [k]: e.target.value })}
-              className="border border-border bg-transparent px-3 py-2 text-sm" />
+          {(["department", "leader", "channel", "account", "customer"] as const).map((k) => (
+            <input
+              key={k}
+              placeholder={k}
+              value={((form as Record<string, unknown>)[k] as string) || ""}
+              onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+              className="border border-border bg-transparent px-3 py-2 text-sm"
+            />
           ))}
           {isAdmin && (
-            <input type="number" placeholder="Salário" value={form.salary || ""} onChange={(e) => setForm({ ...form, salary: Number(e.target.value) })}
-              className="border border-border bg-transparent px-3 py-2 text-sm" />
+            <input
+              type="number"
+              placeholder="Salário"
+              value={form.salary || ""}
+              onChange={(e) => setForm({ ...form, salary: Number(e.target.value) })}
+              className="border border-border bg-transparent px-3 py-2 text-sm"
+            />
           )}
         </div>
-        <button onClick={add} className="mt-4 inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2 text-xs uppercase tracking-[0.18em] font-semibold">
+        <button
+          onClick={add}
+          className="mt-4 inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2 text-xs uppercase tracking-[0.18em] font-semibold"
+        >
           <Plus className="w-4 h-4" /> Adicionar
         </button>
       </div>
@@ -185,9 +262,15 @@ function OrgPage() {
       {view === "tree" ? (
         <div className="bg-card border border-border p-6">
           {tree.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Nenhum nó ainda. Importe uma planilha ou cadastre manualmente.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Nenhum nó ainda. Importe uma planilha ou cadastre manualmente.
+            </p>
           ) : (
-            <ul className="space-y-1">{tree.map((n, i) => <TreeRow key={i} node={n} depth={0} showSalary={isAdmin} />)}</ul>
+            <ul className="space-y-1">
+              {tree.map((n, i) => (
+                <TreeRow key={i} node={n} depth={0} showSalary={isAdmin} />
+              ))}
+            </ul>
           )}
         </div>
       ) : (
@@ -206,7 +289,7 @@ function OrgPage() {
               </tr>
             </thead>
             <tbody>
-              {nodes.map(n => (
+              {nodes.map((n) => (
                 <tr key={n.id} className="border-t border-border">
                   <td className="px-6 py-3">{n.bu}</td>
                   <td className="px-6 py-3">{n.department}</td>
@@ -214,13 +297,31 @@ function OrgPage() {
                   <td className="px-6 py-3">{n.channel}</td>
                   <td className="px-6 py-3">{n.account}</td>
                   <td className="px-6 py-3">{n.customer}</td>
-                  {isAdmin && <td className="px-6 py-3 text-right font-mono text-xs">{fmt(salaries[n.id] || 0)}</td>}
+                  {isAdmin && (
+                    <td className="px-6 py-3 text-right font-mono text-xs">
+                      {fmt(salaries[n.id] || 0)}
+                    </td>
+                  )}
                   <td className="px-6 py-3 text-right">
-                    <button onClick={() => del(n.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
+                    <button
+                      onClick={() => del(n.id)}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </td>
                 </tr>
               ))}
-              {nodes.length === 0 && <tr><td colSpan={isAdmin ? 8 : 7} className="px-6 py-12 text-center text-muted-foreground text-sm">Nenhum nó ainda.</td></tr>}
+              {nodes.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={isAdmin ? 8 : 7}
+                    className="px-6 py-12 text-center text-muted-foreground text-sm"
+                  >
+                    Nenhum nó ainda.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -229,23 +330,49 @@ function OrgPage() {
   );
 }
 
-function TreeRow({ node, depth, showSalary }: { node: TreeNode; depth: number; showSalary: boolean }) {
+function TreeRow({
+  node,
+  depth,
+  showSalary,
+}: {
+  node: TreeNode;
+  depth: number;
+  showSalary: boolean;
+}) {
   const [open, setOpen] = useState(depth < 2);
   const hasKids = node.children.length > 0;
   return (
     <li>
-      <button onClick={() => hasKids && setOpen(o => !o)}
-        className="w-full flex items-center gap-2 py-1.5 px-2 hover:bg-secondary text-left">
+      <button
+        onClick={() => hasKids && setOpen((o) => !o)}
+        className="w-full flex items-center gap-2 py-1.5 px-2 hover:bg-secondary text-left"
+      >
         <span style={{ width: depth * 18 }} />
-        {hasKids ? (open ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />) : <span className="w-3.5" />}
-        <span className="text-xs uppercase tracking-wider text-muted-foreground w-24">{node.level}</span>
+        {hasKids ? (
+          open ? (
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+          )
+        ) : (
+          <span className="w-3.5" />
+        )}
+        <span className="text-xs uppercase tracking-wider text-muted-foreground w-24">
+          {node.level}
+        </span>
         <span className="text-sm font-medium text-foreground flex-1">{node.value}</span>
-        <span className="text-xs text-muted-foreground">{node.count} {node.count === 1 ? "pessoa" : "pessoas"}</span>
-        {showSalary && <span className="text-xs font-mono text-primary w-32 text-right">{fmt(node.salary)}</span>}
+        <span className="text-xs text-muted-foreground">
+          {node.count} {node.count === 1 ? "pessoa" : "pessoas"}
+        </span>
+        {showSalary && (
+          <span className="text-xs font-mono text-primary w-32 text-right">{fmt(node.salary)}</span>
+        )}
       </button>
       {hasKids && open && (
         <ul className="space-y-0.5">
-          {node.children.map((c, i) => <TreeRow key={i} node={c} depth={depth + 1} showSalary={showSalary} />)}
+          {node.children.map((c, i) => (
+            <TreeRow key={i} node={c} depth={depth + 1} showSalary={showSalary} />
+          ))}
         </ul>
       )}
     </li>
@@ -253,5 +380,9 @@ function TreeRow({ node, depth, showSalary }: { node: TreeNode; depth: number; s
 }
 
 function fmt(n: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(n);
 }

@@ -21,8 +21,22 @@ export function BrandFooter() {
         </div>
         <div className="flex flex-row flex-wrap items-center gap-x-6 gap-y-1 border-t border-border/70 py-5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:text-xs">
           <span className="font-semibold">Outros produtos</span>
-          <a href="https://prisma.pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">Prisma · Marketing Mix Modeling</a>
-          <a href="https://lente.pereirasaraiva.com" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">Lente · Pesquisa Qualitativa</a>
+          <a
+            href="https://prisma.pereirasaraiva.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-opacity hover:opacity-70"
+          >
+            Prisma · Marketing Mix Modeling
+          </a>
+          <a
+            href="https://lente.pereirasaraiva.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-opacity hover:opacity-70"
+          >
+            Lente · Pesquisa Qualitativa
+          </a>
         </div>
         <div className="flex flex-row flex-nowrap items-center justify-between gap-3 border-t border-border/70 py-6">
           <a
@@ -34,8 +48,12 @@ export function BrandFooter() {
             J P Saraiva
           </a>
           <div className="flex items-center gap-4 text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:text-xs">
-            <Link to="/privacidade" className="transition-opacity hover:opacity-70">Privacidade</Link>
-            <Link to="/termos" className="transition-opacity hover:opacity-70">Termos</Link>
+            <Link to="/privacidade" className="transition-opacity hover:opacity-70">
+              Privacidade
+            </Link>
+            <Link to="/termos" className="transition-opacity hover:opacity-70">
+              Termos
+            </Link>
             <span>© {new Date().getFullYear()}</span>
           </div>
         </div>

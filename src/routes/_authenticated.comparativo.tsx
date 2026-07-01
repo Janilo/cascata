@@ -2,7 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Plus, X } from "lucide-react";
 import { getWaterfall } from "@/lib/waterfall.functions";
 import { useBusinessUnits } from "@/hooks/use-business-units";
@@ -12,14 +22,24 @@ export const Route = createFileRoute("/_authenticated/comparativo")({
 });
 
 type Line = {
-  code: string; label: string | null; kind: "main" | "sub"; bucket: "revenue" | "deduction" | "cost";
-  main_no: number | null; sort_order: number;
+  code: string;
+  label: string | null;
+  kind: "main" | "sub";
+  bucket: "revenue" | "deduction" | "cost";
+  main_no: number | null;
+  sort_order: number;
 };
 
 type PeriodData = { month: string; totals: Record<string, number> };
 
-const brl = (n: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(n);
-const compact = (n: number) => new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+const brl = (n: number) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(n);
+const compact = (n: number) =>
+  new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(n);
 const monthLabel = (m: string) => {
   const [y, mm] = m.split("-");
   const d = new Date(Number(y), Number(mm) - 1, 1);
@@ -39,9 +59,15 @@ function lastNMonths(n: number): string[] {
 
 function kpisFor(totals: Record<string, number>, lines: Line[]) {
   const sum = (codes: string[]) => codes.reduce((s, c) => s + (totals[c] || 0), 0);
-  const revenueCodes = lines.filter(l => l.kind === "main" && l.bucket === "revenue").map(l => l.code);
-  const deductionCodes = lines.filter(l => l.kind === "main" && l.bucket === "deduction").map(l => l.code);
-  const costCodes = lines.filter(l => l.kind === "main" && l.bucket === "cost").map(l => l.code);
+  const revenueCodes = lines
+    .filter((l) => l.kind === "main" && l.bucket === "revenue")
+    .map((l) => l.code);
+  const deductionCodes = lines
+    .filter((l) => l.kind === "main" && l.bucket === "deduction")
+    .map((l) => l.code);
+  const costCodes = lines
+    .filter((l) => l.kind === "main" && l.bucket === "cost")
+    .map((l) => l.code);
   const receitaBruta = sum(revenueCodes);
   const deducoes = sum(deductionCodes);
   const custos = sum(costCodes);
@@ -54,7 +80,9 @@ function kpisFor(totals: Record<string, number>, lines: Line[]) {
 function ComparativoPage() {
   const { bus } = useBusinessUnits();
   const [bu, setBu] = useState<string>("B2B");
-  useEffect(() => { if (bus.length && !bus.find(b => b.code === bu)) setBu(bus[0].code); }, [bus, bu]);
+  useEffect(() => {
+    if (bus.length && !bus.find((b) => b.code === bu)) setBu(bus[0].code);
+  }, [bus, bu]);
   const [months, setMonths] = useState<string[]>(() => lastNMonths(3));
   const [lines, setLines] = useState<Line[]>([]);
   const [periods, setPeriods] = useState<PeriodData[]>([]);
@@ -67,7 +95,10 @@ function ComparativoPage() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("waterfall_lines").select("code,label,kind,bucket,main_no,sort_order").order("sort_order");
+      const { data } = await supabase
+        .from("waterfall_lines")
+        .select("code,label,kind,bucket,main_no,sort_order")
+        .order("sort_order");
       setLines((data as Line[]) || []);
     })();
   }, []);
@@ -85,25 +116,31 @@ function ComparativoPage() {
       if (active) setPeriods(results);
       setLoading(false);
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [bu, months, callWaterfall]);
 
   const kpisByMonth = useMemo(
-    () => periods.map(p => ({ month: p.month, ...kpisFor(p.totals, lines) })),
+    () => periods.map((p) => ({ month: p.month, ...kpisFor(p.totals, lines) })),
     [periods, lines],
   );
 
   const trendData = useMemo(
-    () => kpisByMonth.map(k => ({
-      month: monthLabel(k.month),
-      "Receita Líquida": Math.round(k.receitaLiquida),
-      "Margem Bruta": Math.round(k.margemBruta),
-      "Pocket %": Number(k.pocketMargin.toFixed(1)),
-    })),
+    () =>
+      kpisByMonth.map((k) => ({
+        month: monthLabel(k.month),
+        "Receita Líquida": Math.round(k.receitaLiquida),
+        "Margem Bruta": Math.round(k.margemBruta),
+        "Pocket %": Number(k.pocketMargin.toFixed(1)),
+      })),
     [kpisByMonth],
   );
 
-  const mainLines = useMemo(() => lines.filter(l => l.kind === "main").sort((a, b) => a.sort_order - b.sort_order), [lines]);
+  const mainLines = useMemo(
+    () => lines.filter((l) => l.kind === "main").sort((a, b) => a.sort_order - b.sort_order),
+    [lines],
+  );
 
   const addMonth = () => {
     if (!newMonth || months.includes(newMonth) || months.length >= 6) return;
@@ -111,7 +148,7 @@ function ComparativoPage() {
   };
   const removeMonth = (m: string) => {
     if (months.length <= 1) return;
-    setMonths(months.filter(x => x !== m));
+    setMonths(months.filter((x) => x !== m));
   };
 
   const baseline = kpisByMonth[0];
@@ -123,11 +160,12 @@ function ComparativoPage() {
           <p className="eyebrow text-muted-foreground">Análise temporal</p>
           <h1 className="font-display text-4xl text-foreground mt-1">Comparativo de períodos</h1>
           <p className="text-sm text-muted-foreground mt-2 max-w-xl">
-            Compare safras ou meses lado a lado. Selecione até 6 períodos para ver evolução de KPIs e linhas do P&L.
+            Compare safras ou meses lado a lado. Selecione até 6 períodos para ver evolução de KPIs
+            e linhas do P&L.
           </p>
         </div>
         <div className="flex gap-2">
-          {bus.map(b => (
+          {bus.map((b) => (
             <button
               key={b.code}
               onClick={() => setBu(b.code)}
@@ -143,8 +181,11 @@ function ComparativoPage() {
       <div className="border border-border bg-card p-4">
         <p className="eyebrow mb-3">Períodos comparados</p>
         <div className="flex flex-wrap items-center gap-2">
-          {months.map(m => (
-            <span key={m} className="inline-flex items-center gap-2 px-3 py-1.5 bg-secondary text-secondary-foreground text-sm">
+          {months.map((m) => (
+            <span
+              key={m}
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-secondary text-secondary-foreground text-sm"
+            >
               {monthLabel(m)}
               {months.length > 1 && (
                 <button onClick={() => removeMonth(m)} className="opacity-60 hover:opacity-100">
@@ -158,10 +199,13 @@ function ComparativoPage() {
               <input
                 type="month"
                 value={newMonth}
-                onChange={e => setNewMonth(e.target.value)}
+                onChange={(e) => setNewMonth(e.target.value)}
                 className="bg-transparent text-sm outline-none"
               />
-              <button onClick={addMonth} className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.1em] font-semibold hover:text-primary">
+              <button
+                onClick={addMonth}
+                className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.1em] font-semibold hover:text-primary"
+              >
                 <Plus className="w-3 h-3" /> Adicionar
               </button>
             </div>
@@ -172,9 +216,7 @@ function ComparativoPage() {
       {/* KPI grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {kpisByMonth.map((k, i) => {
-          const delta = baseline && i > 0
-            ? ((k.pocketMargin - baseline.pocketMargin))
-            : 0;
+          const delta = baseline && i > 0 ? k.pocketMargin - baseline.pocketMargin : 0;
           return (
             <div key={k.month} className="border border-border bg-card p-5">
               <div className="flex items-baseline justify-between">
@@ -185,12 +227,25 @@ function ComparativoPage() {
                   </span>
                 )}
               </div>
-              <p className="font-display text-3xl text-foreground mt-2">{k.pocketMargin.toFixed(1)}%</p>
-              <p className="text-xs text-muted-foreground uppercase tracking-[0.1em]">Pocket margin</p>
+              <p className="font-display text-3xl text-foreground mt-2">
+                {k.pocketMargin.toFixed(1)}%
+              </p>
+              <p className="text-xs text-muted-foreground uppercase tracking-[0.1em]">
+                Pocket margin
+              </p>
               <div className="mt-4 space-y-1 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Rec. Líquida</span><span className="font-mono">{brl(k.receitaLiquida)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Margem Bruta</span><span className="font-mono">{brl(k.margemBruta)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Deduções</span><span className="font-mono">{brl(k.deducoes)}</span></div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Rec. Líquida</span>
+                  <span className="font-mono">{brl(k.receitaLiquida)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Margem Bruta</span>
+                  <span className="font-mono">{brl(k.margemBruta)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Deduções</span>
+                  <span className="font-mono">{brl(k.deducoes)}</span>
+                </div>
               </div>
             </div>
           );
@@ -205,15 +260,50 @@ function ComparativoPage() {
             <LineChart data={trendData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} />
-              <YAxis yAxisId="left" tickFormatter={compact} stroke="var(--muted-foreground)" fontSize={12} />
-              <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${v}%`} stroke="var(--muted-foreground)" fontSize={12} />
+              <YAxis
+                yAxisId="left"
+                tickFormatter={compact}
+                stroke="var(--muted-foreground)"
+                fontSize={12}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                tickFormatter={(v) => `${v}%`}
+                stroke="var(--muted-foreground)"
+                fontSize={12}
+              />
               <Tooltip
-                formatter={(value, name) => name === "Pocket %" ? `${value}%` : brl(Number(value))}
+                formatter={(value, name) =>
+                  name === "Pocket %" ? `${value}%` : brl(Number(value))
+                }
                 contentStyle={{ background: "var(--card)", border: "1px solid var(--border)" }}
               />
-              <Line yAxisId="left" type="monotone" dataKey="Receita Líquida" stroke="var(--chart-1)" strokeWidth={2} dot={false} />
-              <Line yAxisId="left" type="monotone" dataKey="Margem Bruta" stroke="var(--chart-2)" strokeWidth={2} dot={false} />
-              <Line yAxisId="right" type="monotone" dataKey="Pocket %" stroke="var(--chart-3)" strokeWidth={2} strokeDasharray="5 4" dot={false} />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="Receita Líquida"
+                stroke="var(--chart-1)"
+                strokeWidth={2}
+                dot={false}
+              />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="Margem Bruta"
+                stroke="var(--chart-2)"
+                strokeWidth={2}
+                dot={false}
+              />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="Pocket %"
+                stroke="var(--chart-3)"
+                strokeWidth={2}
+                strokeDasharray="5 4"
+                dot={false}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -249,29 +339,39 @@ function ComparativoPage() {
               <tr>
                 <th className="text-left px-4 py-3 font-semibold">#</th>
                 <th className="text-left px-4 py-3 font-semibold">Linha</th>
-                {periods.map(p => (
-                  <th key={p.month} className="text-right px-4 py-3 font-semibold">{monthLabel(p.month)}</th>
+                {periods.map((p) => (
+                  <th key={p.month} className="text-right px-4 py-3 font-semibold">
+                    {monthLabel(p.month)}
+                  </th>
                 ))}
                 {periods.length > 1 && (
-                  <th className="text-right px-4 py-3 font-semibold">Δ vs {monthLabel(periods[0].month)}</th>
+                  <th className="text-right px-4 py-3 font-semibold">
+                    Δ vs {monthLabel(periods[0].month)}
+                  </th>
                 )}
               </tr>
             </thead>
             <tbody>
-              {mainLines.map(l => {
-                const values = periods.map(p => p.totals[l.code] || 0);
+              {mainLines.map((l) => {
+                const values = periods.map((p) => p.totals[l.code] || 0);
                 const first = values[0] || 0;
                 const last = values[values.length - 1] || 0;
                 const delta = first === 0 ? 0 : ((last - first) / Math.abs(first)) * 100;
                 return (
                   <tr key={l.code} className="border-t border-border">
-                    <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{l.main_no}</td>
+                    <td className="px-4 py-2 font-mono text-xs text-muted-foreground">
+                      {l.main_no}
+                    </td>
                     <td className="px-4 py-2">{l.label}</td>
                     {values.map((v, i) => (
-                      <td key={i} className="px-4 py-2 text-right font-mono">{v === 0 ? "—" : brl(v)}</td>
+                      <td key={i} className="px-4 py-2 text-right font-mono">
+                        {v === 0 ? "—" : brl(v)}
+                      </td>
                     ))}
                     {periods.length > 1 && (
-                      <td className={`px-4 py-2 text-right tabular ${delta === 0 ? "delta-zero" : delta > 0 ? "delta-up" : "delta-down"}`}>
+                      <td
+                        className={`px-4 py-2 text-right tabular ${delta === 0 ? "delta-zero" : delta > 0 ? "delta-up" : "delta-down"}`}
+                      >
                         {first === 0 ? "—" : `${delta > 0 ? "+" : ""}${delta.toFixed(1)}%`}
                       </td>
                     )}
