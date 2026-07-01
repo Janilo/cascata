@@ -20,6 +20,18 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Approval gate — mirrors src/lib/require-approved.ts (admin OR is_approved).
+    // The serverFn side enforces this everywhere; the edge runtime must re-check it
+    // too, or a logged-in but unapproved user can still burn the AI key/budget.
+    const [{ data: profile }, { data: roles }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("is_approved").eq("id", user.id).maybeSingle(),
+      supabaseAdmin.from("user_roles").select("role").eq("user_id", user.id),
+    ]);
+    const isAdmin = (roles ?? []).some((r: { role: string }) => r.role === "admin");
+    if (!isAdmin && !profile?.is_approved) {
+      return new Response(JSON.stringify({ error: "Forbidden: account pending approval" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const { fileName, content } = await req.json();
     const key = Deno.env.get("AI_API_KEY");
     if (!key) throw new Error("AI_API_KEY missing");
