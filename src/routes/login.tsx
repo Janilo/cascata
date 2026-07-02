@@ -5,7 +5,7 @@ import { CascataWordmark } from "@/components/brand/CascataWordmark";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
-    redirect: (s.redirect as string) || "/waterfall",
+    redirect: s.redirect as string | undefined,
   }),
   component: LoginPage,
   head: () => ({
@@ -30,7 +30,8 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { redirect: redirectTo } = Route.useSearch();
+  const { redirect } = Route.useSearch();
+  const redirectTo = redirect ?? "/waterfall";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
