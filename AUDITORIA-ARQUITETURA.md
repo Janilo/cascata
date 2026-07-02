@@ -256,6 +256,6 @@ Duas funções chamadas `kpisFor`, em dois arquivos, com **assinaturas e semânt
 - [ ] `extract-inputs`/`extract-customers` retornam 403 para usuário não aprovado. *(A4)*
 - [ ] O predicado "admin OU aprovado" vive em 1 helper client + 1 server. *(A5)*
 - [ ] `inputs.tsx`/`clientes.tsx` não fazem `.upsert(`/`.insert(` direto em tabela de domínio. *(A6)*
-- [ ] Throws de domínio carregam `code`; a UI de share distingue expirado × inválido por `code`. *(A7)*
+- [x] Throws de domínio carregam `code` (`AppError` em `app-error.ts`); a UI de share distingue expirado × inválido por `code` (`appErrorCode`), não pelo texto. *(A7)*
 - [ ] `use-business-units.ts` não contém hex literais. *(A8)*
 - [ ] Documentado que a BU **não** é fronteira de segurança (RLS `USING(true)`); é organização visual. *(§5)*
