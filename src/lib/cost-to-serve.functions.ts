@@ -6,9 +6,15 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requireApprovedUser } from "./require-approved";
+import {
+  bestByCell,
+  computeRevenueByCustomer,
+  findPersonnelLine,
+  type LineInput,
+  type WaterfallLine,
+} from "./waterfall-reduce";
 
 const Input = z.object({ customer_id: z.string().uuid() });
-const PRIORITY_ORDER = ["P1", "P2", "P3", "MANUAL", "RATEIO"] as const;
 
 export const getCustomerPnL = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -52,38 +58,15 @@ export const getCustomerPnL = createServerFn({ method: "POST" })
     const salaryById = new Map<string, number>();
     for (const s of salaries || []) salaryById.set(s.org_node_id, Number(s.salary || 0));
 
-    // Best value per (line_code, customer_id)
-    const best = new Map<
-      string,
-      { line_code: string; customer_id: string; value: number; priority: string }
-    >();
-    for (const r of inputs || []) {
-      if (r.value === null || r.value === undefined) continue;
-      const key = `${r.line_code}__${r.customer_id}`;
-      const cur = best.get(key);
-      const pCur = cur
-        ? PRIORITY_ORDER.indexOf(cur.priority as (typeof PRIORITY_ORDER)[number])
-        : 99;
-      const pNew = PRIORITY_ORDER.indexOf(r.priority as (typeof PRIORITY_ORDER)[number]);
-      if (!cur || pNew < pCur)
-        best.set(key, {
-          line_code: r.line_code,
-          customer_id: r.customer_id,
-          value: Number(r.value),
-          priority: r.priority,
-        });
-    }
+    // Best value per (line_code, customer_id) — shared dedupe with the waterfall
+    // core; custo-de-servir scopes to the whole BU, so no per-row filter.
+    const best = bestByCell((inputs || []) as LineInput[]);
 
     // Revenue per customer (used as salary allocation weight)
     const revenueLineCodes = new Set(
       (lines || []).filter((l) => l.bucket === "revenue").map((l) => l.code),
     );
-    const revenueByCustomer = new Map<string, number>();
-    for (const v of best.values()) {
-      if (revenueLineCodes.has(v.line_code)) {
-        revenueByCustomer.set(v.customer_id, (revenueByCustomer.get(v.customer_id) || 0) + v.value);
-      }
-    }
+    const revenueByCustomer = computeRevenueByCustomer(best, revenueLineCodes);
 
     // Per-customer line totals — only this customer
     const lineTotals = new Map<string, number>();
@@ -93,10 +76,7 @@ export const getCustomerPnL = createServerFn({ method: "POST" })
     }
 
     // Salary allocation: this customer's slice of each matching org node
-    const personnelLine =
-      (lines || []).find(
-        (l) => l.kind === "main" && (l.label || "").toLowerCase().includes("pessoal"),
-      )?.code || (lines || []).find((l) => l.kind === "main" && l.bucket === "cost")?.code;
+    const personnelLine = findPersonnelLine((lines || []) as WaterfallLine[]);
 
     let salaryAllocated = 0;
     if (personnelLine && allCustomers) {
