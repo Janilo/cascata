@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { getSharedWaterfall } from "@/lib/waterfall.functions";
+import { appErrorCode, type AppErrorCode } from "@/lib/app-error";
 import { computePnLKpis } from "@/lib/pnl";
 
 export const Route = createFileRoute("/share/$token")({
@@ -42,34 +43,50 @@ const brl = (n: number) =>
 const compact = (n: number) =>
   new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(n);
 
+// Copy per typed error code — the UI reacts to WHICH failure happened
+// (appErrorCode), never to the message text.
+const SHARE_ERROR_COPY: Partial<Record<AppErrorCode, { title: string; hint: string }>> = {
+  LINK_EXPIRED: {
+    title: "Link expirado",
+    hint: "Este link de visualização venceu. Peça ao remetente um novo link.",
+  },
+  LINK_INVALID: {
+    title: "Link inválido",
+    hint: "Confira se o endereço foi copiado por inteiro — ou peça um novo link ao remetente.",
+  },
+};
+
 function SharedWaterfallPage() {
   const { token } = Route.useParams();
   const call = useServerFn(getSharedWaterfall);
   const [data, setData] = useState<Awaited<ReturnType<typeof getSharedWaterfall>> | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [err, setErr] = useState<{ code?: AppErrorCode; message: string } | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
         setData(await call({ data: { token } }));
       } catch (e: unknown) {
-        setErr(e instanceof Error ? e.message : "Erro");
+        setErr({ code: appErrorCode(e), message: e instanceof Error ? e.message : "Erro" });
       }
     })();
   }, [token, call]);
 
-  if (err)
+  if (err) {
+    const copy = (err.code && SHARE_ERROR_COPY[err.code]) || {
+      title: err.message,
+      hint: "Solicite um novo link de visualização ao remetente.",
+    };
     return (
       <div className="min-h-screen flex items-center justify-center p-10">
         <div className="max-w-md text-center">
           <p className="eyebrow text-outflow">Link indisponível</p>
-          <h1 className="font-display text-3xl text-primary mt-3">{err}</h1>
-          <p className="text-sm text-muted-foreground mt-3">
-            Solicite um novo link de visualização ao remetente.
-          </p>
+          <h1 className="font-display text-3xl text-primary mt-3">{copy.title}</h1>
+          <p className="text-sm text-muted-foreground mt-3">{copy.hint}</p>
         </div>
       </div>
     );
+  }
   if (!data)
     return (
       <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
