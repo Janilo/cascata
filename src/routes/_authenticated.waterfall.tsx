@@ -27,6 +27,7 @@ import {
   Check,
 } from "lucide-react";
 import { getWaterfall, createSharedLink } from "@/lib/waterfall.functions";
+import { PNL_LINE_GROUPS as PL_GROUPS, computePnLKpis, type PnLKpis } from "@/lib/pnl";
 import { useBusinessUnits, type BusinessUnit } from "@/hooks/use-business-units";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -48,13 +49,8 @@ type Line = {
   sort_order: number;
 };
 
-type Kpis = {
-  grossRevenue: number;
-  deductions: number;
-  netRevenue: number;
-  grossMargin: number;
-  pocket: number;
-};
+// Full ladder lives in @/lib/pnl; this alias keeps the local annotations terse.
+type Kpis = PnLKpis;
 
 const COMPARE = "__COMPARE__";
 
@@ -80,65 +76,8 @@ type ChartRow = {
   groupKey?: string;
 };
 
-// P&L aggregate groups — codes map to waterfall_lines.code
-const PL_GROUPS = [
-  {
-    key: "rb",
-    label: "Receita Bruta",
-    shortLabel: "Rec. Bruta",
-    codes: ["1", "2", "3", "4", "5"],
-    bucket: "revenue",
-  },
-  {
-    key: "ded",
-    label: "Deduções de Receita",
-    shortLabel: "Deduções",
-    codes: ["6", "7", "8"],
-    bucket: "deduction",
-  },
-  {
-    key: "cpvt",
-    label: "CPV — Tech / Infra",
-    shortLabel: "CPV Tech",
-    codes: ["9", "10", "11", "12", "13"],
-    bucket: "cost",
-  },
-  {
-    key: "cpvo",
-    label: "CPV — Ops de Cliente",
-    shortLabel: "CPV Ops",
-    codes: ["14", "15", "16"],
-    bucket: "cost",
-  },
-  {
-    key: "sls",
-    label: "OpEx — Sales",
-    shortLabel: "Sales",
-    codes: ["17", "18", "19"],
-    bucket: "cost",
-  },
-  {
-    key: "mkt",
-    label: "OpEx — Marketing",
-    shortLabel: "Marketing",
-    codes: ["20", "21", "22"],
-    bucket: "cost",
-  },
-  {
-    key: "eng",
-    label: "OpEx — Eng / Produto",
-    shortLabel: "Eng/Prod",
-    codes: ["23", "24", "25"],
-    bucket: "cost",
-  },
-  {
-    key: "ga",
-    label: "OpEx — G&A",
-    shortLabel: "G&A",
-    codes: ["26", "27", "28", "29"],
-    bucket: "cost",
-  },
-] as const;
+// P&L aggregate groups (codes + labels) come from @/lib/pnl as PL_GROUPS — the
+// single home of the 1..29 line codes, shared with the KPI ladder below.
 
 // Chart sequence: P&L groups interspersed with milestone totals
 type PLGroupKey = (typeof PL_GROUPS)[number]["key"];
@@ -162,36 +101,8 @@ const CHART_SEQUENCE: Array<
 
 // Values in DB may be stored as positive OR negative for non-revenue lines.
 // Normalize by treating the magnitude as the absolute value.
-function absOf(totals: Map<string, number>, ...codes: string[]) {
-  return codes.reduce((s, c) => s + Math.abs(totals.get(c) || 0), 0);
-}
-
-function kpisFor(totals: Map<string, number>): Kpis {
-  const sumRaw = (codes: string[]) => codes.reduce((s, c) => s + (totals.get(c) || 0), 0);
-  const grossRevenue = sumRaw(["1", "2", "3", "4", "5"]);
-  const deductions = absOf(totals, "6", "7", "8");
-  const netRevenue = grossRevenue - deductions;
-  const cogs = absOf(totals, "9", "10", "11", "12", "13", "14", "15", "16");
-  const grossMargin = netRevenue - cogs;
-  const opex = absOf(
-    totals,
-    "17",
-    "18",
-    "19",
-    "20",
-    "21",
-    "22",
-    "23",
-    "24",
-    "25",
-    "26",
-    "27",
-    "28",
-    "29",
-  );
-  const pocket = grossMargin - opex;
-  return { grossRevenue, deductions, netRevenue, grossMargin, pocket };
-}
+// KPI ladder (grossRevenue → … → pocket / pocketPct) lives in @/lib/pnl as
+// computePnLKpis — one definition shared by this page, comparativo and share.
 
 function WaterfallPage() {
   const { bus, labelOf, colorOf } = useBusinessUnits();
@@ -442,11 +353,11 @@ function WaterfallPage() {
     return rows;
   }, [adjustedTotals, expandedGroup, mainLines]);
 
-  const baselineKpis = useMemo(() => kpisFor(activeTotals), [activeTotals]);
-  const kpis = useMemo(() => kpisFor(adjustedTotals), [adjustedTotals]);
+  const baselineKpis = useMemo(() => computePnLKpis(activeTotals), [activeTotals]);
+  const kpis = useMemo(() => computePnLKpis(adjustedTotals), [adjustedTotals]);
   const kpisByBu = useMemo(() => {
     const out = new Map<string, Kpis>();
-    for (const b of bus) out.set(b.code, kpisFor(totalsByBu.get(b.code) ?? EMPTY));
+    for (const b of bus) out.set(b.code, computePnLKpis(totalsByBu.get(b.code) ?? EMPTY));
     return out;
   }, [bus, totalsByBu, EMPTY]);
   const isAdjusted = useMemo(() => Object.values(multipliers).some((v) => v !== 1), [multipliers]);
@@ -543,11 +454,11 @@ function WaterfallPage() {
           ["Deduções", (k: Kpis) => -k.deductions],
           ["Receita Líquida", (k: Kpis) => k.netRevenue],
           ["Margem Bruta", (k: Kpis) => k.grossMargin],
-          ["Pocket Margin", (k: Kpis) => k.pocket],
+          ["Pocket Margin (R$)", (k: Kpis) => k.pocket],
         ] as Array<[string, (k: Kpis) => number]>
       ).map(([label, pick]) => [
         label,
-        ...bus.map((b) => fmt(pick(kpisByBu.get(b.code) ?? kpisFor(EMPTY)))),
+        ...bus.map((b) => fmt(pick(kpisByBu.get(b.code) ?? computePnLKpis(EMPTY)))),
       ]);
       autoTable(doc, {
         startY: 78,
@@ -575,7 +486,7 @@ function WaterfallPage() {
           ["Deduções", fmt(-kpis.deductions)],
           ["Receita Líquida", fmt(kpis.netRevenue)],
           ["Margem Bruta", fmt(kpis.grossMargin)],
-          ["Pocket Margin", fmt(kpis.pocket)],
+          ["Pocket Margin (R$)", fmt(kpis.pocket)],
         ],
         styles: { fontSize: 9 },
         headStyles: { fillColor: [30, 30, 30] },
@@ -787,7 +698,7 @@ function WaterfallPage() {
                 { label: "Receita Líquida", v: kpis.netRevenue, base: baselineKpis.netRevenue },
                 { label: "Margem Bruta", v: kpis.grossMargin, base: baselineKpis.grossMargin },
                 {
-                  label: "Pocket Margin",
+                  label: "Pocket Margin (R$)",
                   v: kpis.pocket,
                   base: baselineKpis.pocket,
                   highlight: true,
@@ -1252,9 +1163,9 @@ function CompareView({
     ["Deduções", (k) => -k.deductions],
     ["Receita Líquida", (k) => k.netRevenue],
     ["Margem Bruta", (k) => k.grossMargin],
-    ["Pocket Margin", (k) => k.pocket, true],
+    ["Pocket Margin (R$)", (k) => k.pocket, true],
   ];
-  const EMPTY_K = { grossRevenue: 0, deductions: 0, netRevenue: 0, grossMargin: 0, pocket: 0 };
+  const EMPTY_K = computePnLKpis({});
 
   const chartData = mainLines.map((l) => {
     const row: Record<string, number | string> = { name: `#${l.code}` };
@@ -1444,7 +1355,7 @@ function SensitivityPanel({
           {isAdjusted && (
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                Δ Pocket Margin
+                Δ Pocket Margin (R$)
               </p>
               <p className={`font-display text-lg ${pocketDelta >= 0 ? "delta-up" : "delta-down"}`}>
                 {pocketDelta >= 0 ? "+" : ""}

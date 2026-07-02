@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   reduceWaterfall,
+  bestByCell,
+  findPersonnelLine,
+  computeRevenueByCustomer,
   type Customer,
   type LineInput,
   type OrgNode,
@@ -102,5 +105,65 @@ describe("reduceWaterfall — filters and subtotals", () => {
     const r = reduceWaterfall(inputs, LINES, [], [customer("c1", "A"), customer("c2", "B")], {});
     expect(r.subTotalsByCode["7.1"]).toBe(50);
     expect(r.subTotalsByCode["7.2"]).toBe(5);
+  });
+});
+
+// The shared primitives that custo-de-servir and the waterfall both build on
+// (extracted so there is one implementation, not two — see cost-to-serve.functions.ts).
+describe("bestByCell — shared priority dedupe", () => {
+  it("keeps the highest-priority value per (line, customer) and skips null values", () => {
+    const inputs: LineInput[] = [
+      { line_code: "1", customer_id: "c1", value: 100, priority: "P2" },
+      { line_code: "1", customer_id: "c1", value: 999, priority: "P1" },
+      { line_code: "1", customer_id: "c1", value: null, priority: "P1" },
+      { line_code: "2", customer_id: "c1", value: 5, priority: "RATEIO" },
+    ];
+    const best = bestByCell(inputs);
+    expect(best.get("1__c1")?.value).toBe(999);
+    expect(best.get("2__c1")?.value).toBe(5);
+    expect(best.size).toBe(2);
+  });
+
+  it("honours the keep predicate (scoping by department/customer)", () => {
+    const inputs: LineInput[] = [
+      { line_code: "1", customer_id: "c1", value: 10, priority: "P1", department: "Vendas" },
+      { line_code: "1", customer_id: "c2", value: 20, priority: "P1", department: "Fiscal" },
+    ];
+    const best = bestByCell(inputs, (r) => r.department === "Vendas");
+    expect(best.has("1__c1")).toBe(true);
+    expect(best.has("1__c2")).toBe(false);
+  });
+});
+
+describe("findPersonnelLine", () => {
+  it("prefers the main line labelled 'pessoal'", () => {
+    const lines: WaterfallLine[] = [
+      { code: "9", kind: "main", bucket: "cost", label: "Infra" },
+      { code: "12", kind: "main", bucket: "cost", label: "Custo de Pessoal" },
+    ];
+    expect(findPersonnelLine(lines)).toBe("12");
+  });
+
+  it("falls back to the first main cost line when none is named 'pessoal'", () => {
+    const lines: WaterfallLine[] = [
+      { code: "1", kind: "main", bucket: "revenue", label: "Receita" },
+      { code: "9", kind: "main", bucket: "cost", label: "Infra" },
+      { code: "10", kind: "main", bucket: "cost", label: "Outro" },
+    ];
+    expect(findPersonnelLine(lines)).toBe("9");
+  });
+});
+
+describe("computeRevenueByCustomer", () => {
+  it("sums only revenue-line winners, per customer", () => {
+    const best = bestByCell([
+      { line_code: "1", customer_id: "c1", value: 100, priority: "P1" },
+      { line_code: "1", customer_id: "c2", value: 40, priority: "P1" },
+      { line_code: "9", customer_id: "c1", value: 30, priority: "P1" }, // cost line — ignored
+    ]);
+    const rev = computeRevenueByCustomer(best, new Set(["1"]));
+    expect(rev.get("c1")).toBe(100);
+    expect(rev.get("c2")).toBe(40);
+    expect(rev.has("9")).toBe(false);
   });
 });

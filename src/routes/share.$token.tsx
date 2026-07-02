@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { getSharedWaterfall } from "@/lib/waterfall.functions";
+import { computePnLKpis } from "@/lib/pnl";
 
 export const Route = createFileRoute("/share/$token")({
   head: () => ({
@@ -82,14 +83,7 @@ function SharedWaterfallPage() {
     .sort((a, b) => (a.main_no || 0) - (b.main_no || 0));
   const totals = new Map(Object.entries(data.totalsByCode || {}));
 
-  const sum = (codes: string[]) => codes.reduce((s, c) => s + (totals.get(c) || 0), 0);
-  const grossRevenue = sum(["1", "2", "3", "4", "5"]);
-  const deductions = sum(["6", "7", "8"]);
-  const netRevenue = grossRevenue - deductions;
-  const cogs = sum(["9", "10", "11", "12", "13", "14", "15", "16"]);
-  const grossMargin = netRevenue - cogs;
-  const opex = sum(["17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29"]);
-  const pocket = grossMargin - opex;
+  const { grossRevenue, deductions, netRevenue, grossMargin, pocket } = computePnLKpis(totals);
 
   let running = 0;
   const bars = mainLines.map((l) => {
@@ -151,7 +145,7 @@ function SharedWaterfallPage() {
             { l: "Deduções", v: -deductions },
             { l: "Receita Líquida", v: netRevenue },
             { l: "Margem Bruta", v: grossMargin },
-            { l: "Pocket Margin", v: pocket },
+            { l: "Pocket Margin (R$)", v: pocket },
           ].map((k) => (
             <div key={k.l} className="border border-border bg-card p-4">
               <p className="eyebrow text-[10px]">{k.l}</p>

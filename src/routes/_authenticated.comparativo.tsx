@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import { Plus, X } from "lucide-react";
 import { getWaterfall } from "@/lib/waterfall.functions";
+import { computePnLKpis } from "@/lib/pnl";
 import { useBusinessUnits } from "@/hooks/use-business-units";
 
 export const Route = createFileRoute("/_authenticated/comparativo")({
@@ -57,25 +58,9 @@ function lastNMonths(n: number): string[] {
   return out;
 }
 
-function kpisFor(totals: Record<string, number>, lines: Line[]) {
-  const sum = (codes: string[]) => codes.reduce((s, c) => s + (totals[c] || 0), 0);
-  const revenueCodes = lines
-    .filter((l) => l.kind === "main" && l.bucket === "revenue")
-    .map((l) => l.code);
-  const deductionCodes = lines
-    .filter((l) => l.kind === "main" && l.bucket === "deduction")
-    .map((l) => l.code);
-  const costCodes = lines
-    .filter((l) => l.kind === "main" && l.bucket === "cost")
-    .map((l) => l.code);
-  const receitaBruta = sum(revenueCodes);
-  const deducoes = sum(deductionCodes);
-  const custos = sum(costCodes);
-  const receitaLiquida = receitaBruta - deducoes;
-  const margemBruta = receitaLiquida - custos;
-  const pocketMargin = receitaLiquida === 0 ? 0 : (margemBruta / receitaLiquida) * 100;
-  return { receitaBruta, deducoes, receitaLiquida, margemBruta, pocketMargin };
-}
+// KPIs come from the shared ladder in @/lib/pnl (computePnLKpis) — the same one
+// the waterfall and share pages use, so "Pocket Margin (R$)" and "Pocket %" mean
+// the same thing on every screen.
 
 function ComparativoPage() {
   const { bus } = useBusinessUnits();
@@ -122,17 +107,17 @@ function ComparativoPage() {
   }, [bu, months, callWaterfall]);
 
   const kpisByMonth = useMemo(
-    () => periods.map((p) => ({ month: p.month, ...kpisFor(p.totals, lines) })),
-    [periods, lines],
+    () => periods.map((p) => ({ month: p.month, ...computePnLKpis(p.totals) })),
+    [periods],
   );
 
   const trendData = useMemo(
     () =>
       kpisByMonth.map((k) => ({
         month: monthLabel(k.month),
-        "Receita Líquida": Math.round(k.receitaLiquida),
-        "Margem Bruta": Math.round(k.margemBruta),
-        "Pocket %": Number(k.pocketMargin.toFixed(1)),
+        "Receita Líquida": Math.round(k.netRevenue),
+        "Pocket Margin (R$)": Math.round(k.pocket),
+        "Pocket %": Number(k.pocketPct.toFixed(1)),
       })),
     [kpisByMonth],
   );
@@ -216,7 +201,7 @@ function ComparativoPage() {
       {/* KPI grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {kpisByMonth.map((k, i) => {
-          const delta = baseline && i > 0 ? k.pocketMargin - baseline.pocketMargin : 0;
+          const delta = baseline && i > 0 ? k.pocketPct - baseline.pocketPct : 0;
           return (
             <div key={k.month} className="border border-border bg-card p-5">
               <div className="flex items-baseline justify-between">
@@ -228,23 +213,21 @@ function ComparativoPage() {
                 )}
               </div>
               <p className="font-display text-3xl text-foreground mt-2">
-                {k.pocketMargin.toFixed(1)}%
+                {k.pocketPct.toFixed(1)}%
               </p>
-              <p className="text-xs text-muted-foreground uppercase tracking-[0.1em]">
-                Pocket margin
-              </p>
+              <p className="text-xs text-muted-foreground uppercase tracking-[0.1em]">Pocket %</p>
               <div className="mt-4 space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Rec. Líquida</span>
-                  <span className="font-mono">{brl(k.receitaLiquida)}</span>
+                  <span className="font-mono">{brl(k.netRevenue)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Margem Bruta</span>
-                  <span className="font-mono">{brl(k.margemBruta)}</span>
+                  <span className="text-muted-foreground">Pocket Margin (R$)</span>
+                  <span className="font-mono">{brl(k.pocket)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Deduções</span>
-                  <span className="font-mono">{brl(k.deducoes)}</span>
+                  <span className="font-mono">{brl(k.deductions)}</span>
                 </div>
               </div>
             </div>
@@ -290,7 +273,7 @@ function ComparativoPage() {
               <Line
                 yAxisId="left"
                 type="monotone"
-                dataKey="Margem Bruta"
+                dataKey="Pocket Margin (R$)"
                 stroke="var(--chart-2)"
                 strokeWidth={2}
                 dot={false}

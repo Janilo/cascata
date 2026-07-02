@@ -6,7 +6,7 @@
 // Keeping the math pure is what makes it testable (see waterfall-reduce.test.ts):
 // the output of this app *is money*, so the reducer must have a safety net.
 
-const PRIORITY_ORDER = ["P1", "P2", "P3", "MANUAL", "RATEIO"] as const;
+export const PRIORITY_ORDER = ["P1", "P2", "P3", "MANUAL", "RATEIO"] as const;
 
 export type LineInput = {
   line_code: string;
@@ -55,6 +55,64 @@ export type WaterfallReduceResult = {
   salaryTotal: number;
 };
 
+export type WinningCell = {
+  line_code: string;
+  customer_id: string;
+  value: number;
+  priority: string;
+};
+
+// Highest-priority value per (line_code, customer_id) — the P1>P2>P3>MANUAL>RATEIO
+// dedupe both the aggregate waterfall and the per-customer "custo de servir"
+// depend on. `keep` optionally scopes which inputs are eligible (by
+// department/customer); custo-de-servir passes none (whole BU).
+export function bestByCell(
+  inputs: LineInput[],
+  keep?: (r: LineInput) => boolean,
+): Map<string, WinningCell> {
+  const best = new Map<string, WinningCell>();
+  for (const r of inputs) {
+    if (r.value === null || r.value === undefined) continue;
+    if (keep && !keep(r)) continue;
+    const key = `${r.line_code}__${r.customer_id}`;
+    const cur = best.get(key);
+    const pCur = cur ? PRIORITY_ORDER.indexOf(cur.priority as (typeof PRIORITY_ORDER)[number]) : 99;
+    const pNew = PRIORITY_ORDER.indexOf(r.priority as (typeof PRIORITY_ORDER)[number]);
+    if (!cur || pNew < pCur)
+      best.set(key, {
+        line_code: r.line_code,
+        customer_id: r.customer_id,
+        value: Number(r.value),
+        priority: r.priority,
+      });
+  }
+  return best;
+}
+
+// The waterfall_lines.code that carries personnel ("pessoal") cost: the named
+// main line if present, else the first main cost line.
+export function findPersonnelLine(lines: WaterfallLine[]): string | undefined {
+  return (
+    lines.find((l) => l.kind === "main" && (l.label || "").toLowerCase().includes("pessoal"))
+      ?.code || lines.find((l) => l.kind === "main" && l.bucket === "cost")?.code
+  );
+}
+
+// Revenue booked per customer from the winning cells — the weight used to
+// allocate salaries across the customers an org node serves.
+export function computeRevenueByCustomer(
+  best: Map<string, WinningCell>,
+  revenueLineCodes: Set<string>,
+): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const v of best.values()) {
+    if (revenueLineCodes.has(v.line_code)) {
+      out.set(v.customer_id, (out.get(v.customer_id) || 0) + v.value);
+    }
+  }
+  return out;
+}
+
 export function reduceWaterfall(
   inputs: LineInput[],
   lines: WaterfallLine[],
@@ -75,41 +133,19 @@ export function reduceWaterfall(
   const allowedCustomerIds = new Set<string>(filteredCustomers.map((c) => c.id));
   const anyCustomerFilter = !!(customerId || account || leader);
 
-  const best = new Map<
-    string,
-    { line_code: string; customer_id: string; value: number; priority: string }
-  >();
-  for (const r of inputs) {
-    if (r.value === null || r.value === undefined) continue;
-    if (department && r.department !== department) continue;
-    if (anyCustomerFilter && !allowedCustomerIds.has(r.customer_id)) continue;
-    const key = `${r.line_code}__${r.customer_id}`;
-    const cur = best.get(key);
-    const pCur = cur ? PRIORITY_ORDER.indexOf(cur.priority as (typeof PRIORITY_ORDER)[number]) : 99;
-    const pNew = PRIORITY_ORDER.indexOf(r.priority as (typeof PRIORITY_ORDER)[number]);
-    if (!cur || pNew < pCur)
-      best.set(key, {
-        line_code: r.line_code,
-        customer_id: r.customer_id,
-        value: Number(r.value),
-        priority: r.priority,
-      });
-  }
+  const best = bestByCell(inputs, (r) => {
+    if (department && r.department !== department) return false;
+    if (anyCustomerFilter && !allowedCustomerIds.has(r.customer_id)) return false;
+    return true;
+  });
 
   const totals = new Map<string, number>();
   for (const v of best.values()) totals.set(v.line_code, (totals.get(v.line_code) || 0) + v.value);
 
   const revenueLineCodes = new Set(lines.filter((l) => l.bucket === "revenue").map((l) => l.code));
-  const revenueByCustomer = new Map<string, number>();
-  for (const v of best.values()) {
-    if (revenueLineCodes.has(v.line_code)) {
-      revenueByCustomer.set(v.customer_id, (revenueByCustomer.get(v.customer_id) || 0) + v.value);
-    }
-  }
+  const revenueByCustomer = computeRevenueByCustomer(best, revenueLineCodes);
 
-  const personnelLine =
-    lines.find((l) => l.kind === "main" && (l.label || "").toLowerCase().includes("pessoal"))
-      ?.code || lines.find((l) => l.kind === "main" && l.bucket === "cost")?.code;
+  const personnelLine = findPersonnelLine(lines);
 
   let salaryTotal = 0;
   if (personnelLine && customers) {

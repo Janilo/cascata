@@ -247,12 +247,12 @@ Duas funções chamadas `kpisFor`, em dois arquivos, com **assinaturas e semânt
 
 ## Checklist de verificação
 
-- [ ] Os códigos de linha do P&L (`["1".."29"]`) aparecem em **um único** arquivo (`src/lib/pnl.ts`). *(A1)*
-- [ ] `grep -rn "grossMargin - opex" src/` retorna **1** ocorrência. *(A1)*
-- [ ] Nenhum rótulo "Pocket Margin" ambíguo: R$ e % têm nomes distintos na UI. *(A1)*
-- [ ] Existe `reduceWaterfall` puro, sem `import` de `@/integrations/supabase`. *(A2)*
-- [ ] `cost-to-serve` reusa o redutor / a detecção de linha de pessoal do núcleo (sem cópia). *(A2)*
-- [ ] `npm test` roda; ≥ 3 arquivos de teste cobrindo P&L, rateio e parse. *(A3)*
+- [x] Os códigos de linha do P&L (`["1".."29"]`) aparecem em **um único** arquivo (`src/lib/pnl.ts`). *(A1)*
+- [x] `grep -rn "grossMargin - opex" src/` retorna **1** ocorrência. *(A1)*
+- [x] Nenhum rótulo "Pocket Margin" ambíguo: R$ e % têm nomes distintos na UI (`Pocket Margin (R$)` vs `Pocket %`). *(A1)*
+- [x] Existe `reduceWaterfall` puro, sem `import` de `@/integrations/supabase`. *(A2)*
+- [x] `cost-to-serve` reusa o núcleo (`bestByCell` / `computeRevenueByCustomer` / `findPersonnelLine`) — sem cópia do dedupe nem da detecção de linha de pessoal. *(A2)*
+- [x] `npm test` roda; ≥ 3 arquivos de teste cobrindo P&L (`pnl.test.ts`), rateio (`waterfall-reduce.test.ts`) e parse (`file-parse.test.ts`). *(A3)*
 - [ ] `extract-inputs`/`extract-customers` retornam 403 para usuário não aprovado. *(A4)*
 - [ ] O predicado "admin OU aprovado" vive em 1 helper client + 1 server. *(A5)*
 - [ ] `inputs.tsx`/`clientes.tsx` não fazem `.upsert(`/`.insert(` direto em tabela de domínio. *(A6)*
