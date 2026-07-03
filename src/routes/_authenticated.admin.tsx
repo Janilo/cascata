@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ShieldCheck, ShieldOff, Check, X, Plus, Trash2 } from "lucide-react";
-import { ADMIN_EMAIL } from "@/lib/config";
+import { getAccessState } from "@/lib/access";
 
 const DEPARTMENTS = [
   "CEO",
@@ -24,13 +24,8 @@ export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async () => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) throw redirect({ to: "/login" });
-    if (u.user.email !== ADMIN_EMAIL) {
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", u.user.id);
-      if (!(roles || []).some((r) => r.role === "admin")) throw redirect({ to: "/waterfall" });
-    }
+    const access = await getAccessState(u.user);
+    if (!access.isAdmin) throw redirect({ to: "/waterfall" });
   },
   component: AdminPage,
 });

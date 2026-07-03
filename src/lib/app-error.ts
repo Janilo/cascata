@@ -16,6 +16,7 @@ export const APP_ERROR_CODES = [
   "AUTH_ERROR", // sign-in with the identity provider failed
   "CONFIG_ERROR", // server env/config missing — operator problem, not user
   "DB_ERROR", // database read/write failed
+  "VALIDATION_ERROR", // input is well-formed but violates a domain precondition
 ] as const;
 
 export type AppErrorCode = (typeof APP_ERROR_CODES)[number];

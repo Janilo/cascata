@@ -13,7 +13,7 @@ import {
   History,
 } from "lucide-react";
 import { CascataWordmark } from "@/components/brand/CascataWordmark";
-import { ADMIN_EMAIL } from "@/lib/config";
+import { getAccessState } from "@/lib/access";
 
 export const Route = createFileRoute("/_authenticated")({
   head: () => ({
@@ -25,14 +25,8 @@ export const Route = createFileRoute("/_authenticated")({
     if (error || !data.user) {
       throw redirect({ to: "/login", search: { redirect: location.href } });
     }
-    // Check approval status (admins bypass)
-    const [{ data: profile }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("is_approved").eq("id", data.user.id).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", data.user.id),
-    ]);
-    const isAdmin =
-      (roles || []).some((r) => r.role === "admin") || data.user.email === ADMIN_EMAIL;
-    if (!isAdmin && !profile?.is_approved) {
+    const access = await getAccessState(data.user);
+    if (!access.canAccess) {
       throw redirect({ to: "/aguardando-aprovacao" });
     }
   },
@@ -56,11 +50,8 @@ function AuthLayout() {
         .maybeSingle();
       setName(p?.full_name || u.user.email || "");
       setDept(p?.department || "");
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", u.user.id);
-      setIsAdmin((roles || []).some((r) => r.role === "admin") || u.user.email === ADMIN_EMAIL);
+      const access = await getAccessState(u.user);
+      setIsAdmin(access.isAdmin);
     })();
   }, []);
 

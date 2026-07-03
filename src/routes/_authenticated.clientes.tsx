@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Trash2, Upload, Loader2 } from "lucide-react";
+import { addCustomers, deleteCustomer } from "@/lib/customers.functions";
 import { fileToText } from "@/lib/file-parse";
 import { useBusinessUnits } from "@/hooks/use-business-units";
 
@@ -33,21 +34,37 @@ function ClientsPage() {
     reload();
   }, []);
 
+  // Escritas via serverFn (customers.functions.ts): Zod + aprovação
+  // re-checada no servidor; a tela não conhece colunas nem created_by.
   const add = async () => {
     if (!form.customer_name) return;
-    await supabase.from("customers").insert({
-      customer_name: form.customer_name,
-      account_id: form.account_id || null,
-      account_name: form.account_name || null,
-      cnpj: form.cnpj || null,
-      bu: form.bu || defaultBu,
-    });
-    setForm({ bu: defaultBu });
-    reload();
+    try {
+      await addCustomers({
+        data: {
+          customers: [
+            {
+              customerName: form.customer_name,
+              accountId: form.account_id || null,
+              accountName: form.account_name || null,
+              cnpj: form.cnpj || null,
+              bu: form.bu || defaultBu,
+            },
+          ],
+        },
+      });
+      setForm({ bu: defaultBu });
+      reload();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Falha ao cadastrar cliente.");
+    }
   };
   const del = async (id: string) => {
-    await supabase.from("customers").delete().eq("id", id);
-    reload();
+    try {
+      await deleteCustomer({ data: { id } });
+      reload();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Falha ao excluir cliente.");
+    }
   };
 
   const upload = async (file: File) => {
@@ -57,15 +74,21 @@ function ClientsPage() {
       body: { fileName: file.name, content: text.slice(0, 8000) },
     });
     if (!error && data?.customers) {
-      for (const c of data.customers as Array<Partial<Customer>>) {
-        if (!c.customer_name) continue;
-        await supabase.from("customers").insert({
-          customer_name: c.customer_name,
-          account_id: c.account_id || null,
-          account_name: c.account_name || null,
+      const rows = (data.customers as Array<Partial<Customer>>)
+        .filter((c) => c.customer_name)
+        .map((c) => ({
+          customerName: c.customer_name as string,
+          accountId: c.account_id || null,
+          accountName: c.account_name || null,
           cnpj: c.cnpj || null,
           bu: c.bu || defaultBu,
-        });
+        }));
+      if (rows.length) {
+        try {
+          await addCustomers({ data: { customers: rows } });
+        } catch (e) {
+          alert(e instanceof Error ? e.message : "Falha ao importar clientes.");
+        }
       }
       reload();
     } else if (error) {
