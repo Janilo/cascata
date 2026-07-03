@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, Loader2 } from "lucide-react";
 import { fileToText } from "@/lib/file-parse";
+import { saveExtractedLineInputs, saveLineInput } from "@/lib/inputs.functions";
 import { useBusinessUnits } from "@/hooks/use-business-units";
 
 export const Route = createFileRoute("/_authenticated/inputs")({
@@ -145,6 +146,8 @@ function InputsPage() {
 
   const globalTotal = allByDept.reduce((s, d) => s + d.total, 0);
 
+  // A escrita mora no serverFn (chave de conflito, default de prioridade,
+  // departamento derivado do perfil) — a tela só informa a célula e o valor.
   const saveValue = async (
     line_code: string,
     customer_id: string,
@@ -152,24 +155,17 @@ function InputsPage() {
     priority: string,
   ) => {
     setBusy(`${line_code}:${customer_id}`);
-    const { error } = await supabase.from("line_inputs").upsert(
-      {
-        line_code,
-        customer_id,
-        bu,
-        department: dept,
-        value,
-        priority,
-        reference_date: referenceDate,
-      },
-      { onConflict: "line_code,customer_id,bu,reference_date" },
-    );
-    if (!error) {
+    try {
+      await saveLineInput({
+        data: { lineCode: line_code, customerId: customer_id, bu, value, priority, referenceDate },
+      });
       const { data: ins } = await supabase
         .from("line_inputs")
         .select("line_code,customer_id,value,priority,department,ai_extraction")
         .eq("reference_date", referenceDate);
       setInputs(ins || []);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Não foi possível salvar o input.");
     }
     setBusy(null);
   };
@@ -207,21 +203,14 @@ function InputsPage() {
       return;
     }
     const extracted: Array<{ customer_id: string; value: number }> = data?.matches || [];
-    for (const m of extracted) {
-      await supabase.from("line_inputs").upsert(
-        {
-          line_code: line.code,
-          customer_id: m.customer_id,
-          bu,
-          department: dept,
-          value: m.value,
-          priority: "P1",
-          file_path: path,
-          ai_extraction: m,
-          reference_date: referenceDate,
-        },
-        { onConflict: "line_code,customer_id,bu,reference_date" },
-      );
+    if (extracted.length) {
+      try {
+        await saveExtractedLineInputs({
+          data: { lineCode: line.code, bu, referenceDate, filePath: path, matches: extracted },
+        });
+      } catch (e) {
+        alert(e instanceof Error ? e.message : "Falha ao salvar os valores extraídos.");
+      }
     }
     const { data: ins } = await supabase
       .from("line_inputs")
