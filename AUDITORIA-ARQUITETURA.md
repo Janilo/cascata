@@ -253,9 +253,9 @@ Duas funções chamadas `kpisFor`, em dois arquivos, com **assinaturas e semânt
 - [x] Existe `reduceWaterfall` puro, sem `import` de `@/integrations/supabase`. *(A2)*
 - [x] `cost-to-serve` reusa o núcleo (`bestByCell` / `computeRevenueByCustomer` / `findPersonnelLine`) — sem cópia do dedupe nem da detecção de linha de pessoal. *(A2)*
 - [x] `npm test` roda; ≥ 3 arquivos de teste cobrindo P&L (`pnl.test.ts`), rateio (`waterfall-reduce.test.ts`) e parse (`file-parse.test.ts`). *(A3)*
-- [ ] `extract-inputs`/`extract-customers` retornam 403 para usuário não aprovado. *(A4)*
+- [x] `extract-inputs`/`extract-customers` retornam 403 para usuário não aprovado (gate espelhando `require-approved.ts` nas duas functions). *(A4)*
 - [x] O predicado "admin OU aprovado" vive em 1 helper client (`getAccessState` em `src/lib/access.ts`) + 1 server (`require-approved.ts`); as 3 rotas chamam o helper. *(A5)*
 - [x] `inputs.tsx`/`clientes.tsx` não fazem `.upsert(`/`.insert(` direto em tabela de domínio — escritas via `inputs.functions.ts`/`customers.functions.ts` (Zod + `requireApprovedUser` + client do usuário, preservando RLS por departamento e a trilha `line_inputs_audit`). *(A6)*
 - [x] Throws de domínio carregam `code` (`AppError` em `app-error.ts`); a UI de share distingue expirado × inválido por `code` (`appErrorCode`), não pelo texto. *(A7)*
-- [ ] `use-business-units.ts` não contém hex literais. *(A8)*
-- [ ] Documentado que a BU **não** é fronteira de segurança (RLS `USING(true)`); é organização visual. *(§5)*
+- [x] `use-business-units.ts` não contém hex literais (`--cascata-steel`/`--cascata-outflow` no lugar dos dois hex). *(A8)*
+- [x] Documentado que a BU **não** é fronteira de segurança (RLS `USING(true)`); é organização visual — `SEGURANCA.md` + apontador no hook. *(§5)*
