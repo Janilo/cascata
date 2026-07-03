@@ -3,14 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type BusinessUnit = { code: string; label: string; sort_order: number };
 
-// Hard-coded BU color palette (cycles if more than 6 BUs)
+// BUs organizam a visualização (filtros, abas, cores) — elas NÃO são
+// fronteira de segurança: qualquer usuário aprovado lê todas as BUs.
+// As fronteiras reais (aprovação, departamento, dono) estão em SEGURANCA.md.
+
+// Hard-coded BU color palette (cycles if more than 6 BUs).
+// Só tokens da paleta — hex cru aqui era o mesmo defeito do antigo DEPT_COLORS.
 export const BU_COLORS = [
   "var(--marine)",
   "var(--primary)",
   "var(--gold)",
   "var(--green)",
-  "#7d3c98",
-  "#d35400",
+  "var(--cascata-steel)",
+  "var(--cascata-outflow)",
 ];
 
 const FALLBACK: BusinessUnit[] = [
