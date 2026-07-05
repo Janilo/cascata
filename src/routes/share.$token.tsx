@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { getSharedWaterfall } from "@/lib/waterfall.functions";
-import { appErrorCode, type AppErrorCode } from "@/lib/app-error";
+import { appErrorCode, type AppErrorCode } from "@/lib/error-codes";
 import { computePnLKpis } from "@/lib/pnl";
 
 export const Route = createFileRoute("/share/$token")({

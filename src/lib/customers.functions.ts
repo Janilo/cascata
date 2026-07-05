@@ -5,7 +5,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { AppError } from "./app-error";
+import { AppError } from "./errors";
 import { AddCustomersSchema, toCustomerRow } from "./customer-write";
 import { requireApprovedUser } from "./require-approved";
 
@@ -40,7 +40,7 @@ export const deleteCustomer = createServerFn({ method: "POST" })
     const { error } = await context.supabase.from("customers").delete().eq("id", data.id);
     if (error) {
       console.error("deleteCustomer failed", { error, id: data.id });
-      throw new AppError("DB_ERROR", "Não foi possível excluir o cliente.", 500);
+      throw new AppError("Não foi possível excluir o cliente.", 500, "DB_ERROR");
     }
     return { ok: true as const };
   });

@@ -2,7 +2,7 @@
 // Throws if not. Use inside server functions that rely on supabaseAdmin
 // (which bypasses RLS) to re-enforce the approval gate.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { AppError } from "./app-error";
+import { ForbiddenError } from "./errors";
 
 export async function requireApprovedUser(userId: string): Promise<void> {
   const [{ data: profile }, { data: roles }] = await Promise.all([
@@ -11,6 +11,6 @@ export async function requireApprovedUser(userId: string): Promise<void> {
   ]);
   const isAdmin = (roles || []).some((r) => r.role === "admin");
   if (!isAdmin && !profile?.is_approved) {
-    throw new AppError("FORBIDDEN_PENDING_APPROVAL", "Forbidden: account pending approval", 403);
+    throw new ForbiddenError("Forbidden: account pending approval", "FORBIDDEN_PENDING_APPROVAL");
   }
 }
