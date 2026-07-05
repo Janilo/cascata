@@ -3,7 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { AppError } from "./app-error";
+import { AppError, NotFoundError } from "./errors";
 import { requireApprovedUser } from "./require-approved";
 import { computeWaterfall } from "./waterfall-core";
 
@@ -43,9 +43,9 @@ export const getSharedWaterfall = createServerFn({ method: "POST" })
       .select("bu,reference_date,expires_at,label")
       .eq("token", data.token)
       .maybeSingle();
-    if (error || !link) throw new AppError("LINK_INVALID", "Link inválido", 404);
+    if (error || !link) throw new NotFoundError("Link inválido", "LINK_INVALID");
     if (new Date(link.expires_at).getTime() < Date.now())
-      throw new AppError("LINK_EXPIRED", "Link expirado", 410);
+      throw new AppError("Link expirado", 410, "LINK_EXPIRED");
 
     const wf = await computeWaterfall({
       bu: link.bu,
@@ -99,7 +99,7 @@ export const createSharedLink = createServerFn({ method: "POST" })
       })
       .select("token,expires_at")
       .single();
-    if (error) throw new AppError("DB_ERROR", error.message);
+    if (error) throw new AppError(error.message, 500, "DB_ERROR");
     return row;
   });
 
@@ -111,7 +111,7 @@ export const listSharedLinks = createServerFn({ method: "GET" })
       .from("shared_links")
       .select("id,token,bu,reference_date,expires_at,label,created_at")
       .order("created_at", { ascending: false });
-    if (error) throw new AppError("DB_ERROR", error.message);
+    if (error) throw new AppError(error.message, 500, "DB_ERROR");
     return data || [];
   });
 
@@ -121,6 +121,6 @@ export const revokeSharedLink = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { error } = await supabase.from("shared_links").delete().eq("id", data.id);
-    if (error) throw new AppError("DB_ERROR", error.message);
+    if (error) throw new AppError(error.message, 500, "DB_ERROR");
     return { ok: true };
   });

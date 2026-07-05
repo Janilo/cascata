@@ -7,7 +7,7 @@ import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
-import { AppError } from "./app-error";
+import { AppError } from "./errors";
 import {
   LINE_INPUT_CONFLICT_KEY,
   SaveExtractedInputsSchema,
@@ -30,9 +30,9 @@ async function resolveDepartment(
     .maybeSingle();
   if (!profile?.department) {
     throw new AppError(
-      "VALIDATION_ERROR",
       "Defina seu departamento no cadastro para lançar inputs.",
       400,
+      "VALIDATION_ERROR",
     );
   }
   return profile.department;
@@ -50,7 +50,7 @@ export const saveLineInput = createServerFn({ method: "POST" })
       .upsert(toLineInputRow(data, department), { onConflict: LINE_INPUT_CONFLICT_KEY });
     if (error) {
       console.error("saveLineInput failed", { error, lineCode: data.lineCode });
-      throw new AppError("DB_ERROR", "Não foi possível salvar o input.", 500);
+      throw new AppError("Não foi possível salvar o input.", 500, "DB_ERROR");
     }
     return { ok: true as const };
   });
