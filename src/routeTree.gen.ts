@@ -22,14 +22,14 @@ import { Route as AguardandoAprovacaoRouteImport } from './routes/aguardando-apr
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
-import { Route as AuthenticatedWaterfallRouteImport } from './routes/_authenticated.waterfall'
-import { Route as AuthenticatedOrganogramaRouteImport } from './routes/_authenticated.organograma'
-import { Route as AuthenticatedInputsRouteImport } from './routes/_authenticated.inputs'
-import { Route as AuthenticatedCustoDeServirRouteImport } from './routes/_authenticated.custo-de-servir'
-import { Route as AuthenticatedComparativoRouteImport } from './routes/_authenticated.comparativo'
-import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated.clientes'
-import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated.auditoria'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
+import { Route as AuthenticatedWaterfallRouteImport } from './routes/_authenticated/waterfall'
+import { Route as AuthenticatedOrganogramaRouteImport } from './routes/_authenticated/organograma'
+import { Route as AuthenticatedInputsRouteImport } from './routes/_authenticated/inputs'
+import { Route as AuthenticatedCustoDeServirRouteImport } from './routes/_authenticated/custo-de-servir'
+import { Route as AuthenticatedComparativoRouteImport } from './routes/_authenticated/comparativo'
+import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
+import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
