@@ -4,6 +4,13 @@
 > Referência: Matt Pocock, "Software Fundamentals Matter More Than Ever" (https://www.youtube.com/watch?v=v4F1gFy-hqg).
 > Escopo: **arquitetura** — módulos, fatias verticais, interfaces, ocultação de informação, testes. **NÃO** é a auditoria de design system (essa é `README.md`, e já foi aplicada: `_authenticated.waterfall.tsx:526` já usa `delta-up/down`, `_authenticated.inputs.tsx:341` já usa `pill-outflow`).
 
+> **⚠️ Status (jul/2026) — este doc é um snapshot e alguns achados já foram resolvidos.** Verificados como resolvidos:
+> - **A4** (edge functions não checavam aprovação) — `extract-customers`/`extract-inputs` re-checam "admin OU aprovado" (fail-closed), espelhando `require-approved.ts`.
+> - **A5** (regra "admin OU aprovado") — consolidada em `access.ts` (cliente) + `require-approved.ts` (servidor).
+> - **A7** (erros tipados) — `app-error.ts` → `errors.ts` canônico, idêntico aos repos irmãos.
+>
+> Padronização cross-repo (P1): `errors.ts` canônico + `client.server.ts` lançando `ConfigError`. Os demais achados abaixo **não foram re-auditados** nesta passada.
+
 ---
 
 ## Sumário executivo
